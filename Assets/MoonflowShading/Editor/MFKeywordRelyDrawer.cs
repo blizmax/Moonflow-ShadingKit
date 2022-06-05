@@ -20,7 +20,7 @@ namespace MoonflowShading.Editor
         public override void OnGUI(Rect position, MaterialProperty prop, string label, MaterialEditor editor)
         {
             _mat = editor.target as Material;
-            if (Array.IndexOf(_mat.shaderKeywords, _relyKeyword) != -1)
+            if (_mat != null && Array.IndexOf(_mat.shaderKeywords, _relyKeyword) != -1)
             { 
                 editor.DefaultShaderProperty(prop, label);
             }
