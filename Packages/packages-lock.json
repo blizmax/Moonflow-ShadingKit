@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.moonflow-studio.core": {
+      "version": "https://gitee.com/reguluz/moonflow-core.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "147ea2f17aec50c7cb49a4f043a03ea197ee8f1e"
+    },
     "com.unity.burst": {
       "version": "1.6.5",
       "depth": 1,
