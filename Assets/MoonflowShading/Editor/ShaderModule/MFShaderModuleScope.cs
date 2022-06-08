@@ -9,6 +9,7 @@ public abstract class MFShaderModuleScope
     public MaterialEditor materialEditor;
     protected uint expandIndex;
     protected GUIContent titleContent;
+    protected Material mat;
 
     public uint ExpandIndex => expandIndex;
     public GUIContent TitleContent => titleContent;
@@ -32,7 +33,5 @@ public abstract class MFShaderModuleScope
             throw new ArgumentException("Could not find MaterialProperty: '" + propertyName + "', Num properties: " + (object)properties.Length);
         return null;
     }
-
-    public abstract void DoSet();
 
 }

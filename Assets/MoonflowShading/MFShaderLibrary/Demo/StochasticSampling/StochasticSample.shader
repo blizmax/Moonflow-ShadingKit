@@ -4,7 +4,9 @@ Shader"Demo/StochasticSample"
     {
         _MainTex ("Texture", 2D) = "white" {}
         [KeywordEnum(None, Inigo1, Inigo2, Inigo3O, Pastebin, ProcedualTAB)]_Type("Sample Type", Float) = 0
-        _NoiseTex("Noise", 2D) = "gray"{}
+        [MFEasyTex]_NoiseTex("Noise", 2D) = "gray"{}
+        _rendertype("RenderType", Float) = 1
+        _blendmode("BlendMode", Float) = 1
     }
     SubShader
     {
@@ -18,7 +20,7 @@ Shader"Demo/StochasticSample"
             #pragma vertex vert
             #pragma fragment frag
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/core.hlsl"
-            #include "../Utility/MFSampleExtension.hlsl"
+            #include "../../Utility/MFSampleExtension.hlsl"
 
             struct appdata
             {
@@ -71,4 +73,5 @@ Shader"Demo/StochasticSample"
             ENDHLSL
         }
     }
+    CustomEditor"MFCelShaderGUI"
 }

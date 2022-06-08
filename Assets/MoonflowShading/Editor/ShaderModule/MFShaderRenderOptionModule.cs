@@ -7,7 +7,6 @@ public class MFShaderRenderOptionModule: MFShaderModuleScope
 {
     public MaterialProperty renderTypeProp;
     public MaterialProperty blendModeProp;
-    private Material mat;
     private GUIContent _renderTypeContent;
     private GUIContent _blendModeContent;
     public MFShaderRenderOptionModule(uint index, MaterialEditor editor) : base(index, editor)
@@ -20,13 +19,18 @@ public class MFShaderRenderOptionModule: MFShaderModuleScope
 
     public override void DrawEditor(Material material)
     {
-        mat = material;
-        materialEditor.MFDrawMatPopup(_renderTypeContent, renderTypeProp, Enum.GetNames(typeof(BaseShaderGUI.SurfaceType)));
-        if ((BaseShaderGUI.SurfaceType)renderTypeProp.floatValue != BaseShaderGUI.SurfaceType.Opaque)
+        using (new EditorGUILayout.VerticalScope("box"))
         {
-            materialEditor.MFDrawMatPopup(_blendModeContent, blendModeProp, Enum.GetNames(typeof(BaseShaderGUI.BlendMode)));
+            mat = material;
+            materialEditor.MFDrawMatPopup(_renderTypeContent, renderTypeProp,
+                Enum.GetNames(typeof(BaseShaderGUI.SurfaceType)));
+            if ((BaseShaderGUI.SurfaceType)renderTypeProp.floatValue != BaseShaderGUI.SurfaceType.Opaque)
+            {
+                materialEditor.MFDrawMatPopup(_blendModeContent, blendModeProp,
+                    Enum.GetNames(typeof(BaseShaderGUI.BlendMode)));
+            }
+            DoSet();
         }
-        DoSet();
     }
 
     public override void FindProperties(MaterialProperty[] properties)
@@ -35,7 +39,7 @@ public class MFShaderRenderOptionModule: MFShaderModuleScope
         blendModeProp = FindProperty("_blendmode", properties, false);
     }
 
-    public override void DoSet()
+    public void DoSet()
     {
         BaseShaderGUI.SurfaceType rendertype = (BaseShaderGUI.SurfaceType)renderTypeProp.floatValue;
         if (rendertype == BaseShaderGUI.SurfaceType.Opaque)
