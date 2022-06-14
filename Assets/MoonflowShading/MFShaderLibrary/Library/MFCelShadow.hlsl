@@ -1,18 +1,17 @@
-#ifndef MF_UTILITY_INCLUDED
-#define MF_UTILITY_INCLUDED
-#include "MFBase.hlsl"
+#ifndef MF_CELSHADOW_INCLUDED
+#define MF_CELSHADOW_INCLUDED
 
-float GetShadow(Varying i, MFMatData data)
+float GetShadow(float4 shadowCoord)
 {
-#ifndef MF_SHADOW
-    float shadow = MainLightRealtimeShadow(i.shadowCoord);
-#else
+// #ifndef MF_SHADOW
+    float shadow = MainLightRealtimeShadow(shadowCoord);
+// #else
     
-#endif
+// #endif
     return shadow;
 }
-float CelShadow(Varying i, float shadow, float3 lightDir, float shadowAtten)
+float CelShadow(float3 posWS, float3 normalWS, float3 lightDir, float shadowAtten)
 {
-    return ApplyShadowFade(shadowAtten, ApplyShadowBias(i.posWS, i.normalWS, lightDir));
+    return ApplyShadowFade(shadowAtten, ApplyShadowBias(posWS, normalWS, lightDir));
 }
 #endif

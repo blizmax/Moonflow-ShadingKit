@@ -1,33 +1,13 @@
 #ifndef MF_BASE_INCLUDED
 #define MF_BASE_INCLUDED
-#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-struct Attributes
-{
-    float4 vertex : POSITION;
-    float3 normalOS : NORMAL;
-    float4 tangentOS : TANGENT;
-    float4 vertColor : COLOR;
-    float4 uv0 : TEXCOORD0;
-    float4 uv1 : TEXCOORD1;
-    UNITY_VERTEX_INPUT_INSTANCE_ID
-};
-struct Varying
-{
-    float4 vertex : SV_POSITION;
-    float3 color : COLOR;
-    float2 uv : TEXCOORD0;
-    float3 posWS : TEXCOORD1;
-    float4 shadowCoord : TEXCOORD2;
-    float3 normalWS : TEXCOORD3;
-    float3 tangentWS : TEXCOORD4;
-    float3 bitangentWS : TEXCOORD5;
-    DECLARE_LIGHTMAP_OR_SH(lightmapUV, vertexSH, 6);
-    UNITY_VERTEX_INPUT_INSTANCE_ID
-};
+#include "MFStructs.hlsl"
 
-Varying vert(Attributes v)
+#include "MFCelLighting.hlsl"
+
+
+BaseVarying vert(BaseAttributes v)
 {
-    Varying o;
+    BaseVarying o;
     o.vertex = TransformObjectToHClip(v.vertex);
     o.color = v.vertColor;
     o.uv = v.uv0;
@@ -46,25 +26,7 @@ Varying vert(Attributes v)
     return o;
 }
 
-struct MFMatData
-{
-    float3 diffuse;
-    float alpha;
-    float metallic;
-    float roughness;
-    float roughness2;
-    float occlusion;
-    float3 normalTS;
-    float3 normalWS;
-    float3 emissive;
-    float3 viewDirWS;
-    float ndv;
-    float oneMinusReflectivity;
-    float3 specColor;
-};
-
-
-MFMatData GetMatData(Varying i, TEXTURE2D_PARAM(dName, dSampler), TEXTURE2D_PARAM(nName, nSampler), TEXTURE2D_PARAM(pName, pSampler), float4 baseST)
+MFMatData GetMatData(BaseVarying i, TEXTURE2D_PARAM(dName, dSampler), TEXTURE2D_PARAM(nName, nSampler), TEXTURE2D_PARAM(pName, pSampler), float4 baseST)
 {
     MFMatData data;
     float2 realUV = i.uv * baseST.xy + baseST.zw;
@@ -88,15 +50,35 @@ MFMatData GetMatData(Varying i, TEXTURE2D_PARAM(dName, dSampler), TEXTURE2D_PARA
     return data;
 }
 
+MFMatData GetMatData(BaseVarying i, float3 iDiffuse, float iAlpha, float2 iNormal, float iMetallic, float iRoughness, float iAO, float iEmission)
+{
+    MFMatData data;
+    float4 realNormal = float4(iNormal.r, iNormal.g, 0.5, 1);
+    data.diffuse = iDiffuse;
+    data.alpha = iAlpha;
+    data.metallic = iMetallic;
+    data.roughness = iRoughness;
+    data.roughness2 = data.roughness * data.roughness;
+    data.occlusion = iAO;
+    data.normalTS = UnpackNormal(realNormal);
+    data.normalWS = mul(data.normalTS, half3x3(i.tangentWS, i.bitangentWS, i.normalWS));
+    data.emissive = iEmission;
+    data.viewDirWS = i.posWS - _WorldSpaceCameraPos;
+    data.ndv = dot(data.normalWS, data.viewDirWS);
+    data.oneMinusReflectivity = OneMinusReflectivityMetallic(data.metallic);
+    data.specColor = lerp(0.04, data.diffuse, data.metallic);
+    return data;
+}
 
-void GetAnisotropyData(Varying i, TEXTURE2D_PARAM(aName, aSampler), float2 uv, out float3 tangentWS, out float3 bitangentWS)
+
+void GetAnisotropyData(BaseVarying i, TEXTURE2D_PARAM(aName, aSampler), float2 uv, out float3 tangentWS, out float3 bitangentWS)
 {
     float3 tangentTex = SAMPLE_TEXTURE2D(aName, aSampler, uv);
     tangentWS = normalize(mul(tangentTex, float3x3(i.tangentWS, i.bitangentWS, i.normalWS)));
     bitangentWS = cross(i.normalWS, tangentWS);
     tangentWS = cross(i.normalWS, bitangentWS);
 }
-void GetMaskEmissive(Varying i, MFMatData md, TEXTURE2D_PARAM(mName, mSampler))
+void GetMaskEmissive(BaseVarying i, MFMatData md, TEXTURE2D_PARAM(mName, mSampler))
 {
     
 }

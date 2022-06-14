@@ -1,19 +1,11 @@
-Shader"Moonflow/CelBase"
+Shader"Moonflow/BaseLight"
 {
     Properties
     {
-        _BaseColor("Color", Color) = (1,1,1,1)
+        _Color("Color", Color) = (1,1,1,1)
         _DiffuseTex ("Diffuse Tex", 2D) = "white" {}
         _NormalTex("Normal Tex", 2D) = "bump" {}
         _PBSTex("Data Tex", 2D) = "black" {}
-        _BaseTex_ST("TileOffset", Vector) = (1,1,0,0)
-        
-        _SelfShadowStr("Self Shadow Str", Range(0,1)) = 0.75
-        _LitEdgeBandWidth("Lit Edge BandWidth", Range(0.001,1))=0.15
-        _LitIndirectAtten("Lit Indirect Atten",Range(0,1)) = 0.5
-        _EnvironmentEffect("EnvironmentEffect", Range(0,1)) = .2
-        
-        
     }
     SubShader
     {
@@ -43,64 +35,22 @@ Shader"Moonflow/CelBase"
             SamplerState sampler_PBSTex;
 
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
-                UNITY_DEFINE_INSTANCED_PROP(float4, _BaseTex_ST)
+                UNITY_DEFINE_INSTANCED_PROP(float4, _DiffuseTex_ST)
                 UNITY_DEFINE_INSTANCED_PROP(float4, _BaseColor)
-            
-                UNITY_DEFINE_INSTANCED_PROP(float, _SelfShadowStr)
-                UNITY_DEFINE_INSTANCED_PROP(float, _LitEdgeBandWidth)
-                UNITY_DEFINE_INSTANCED_PROP(float, _LitIndirectAtten)
-                UNITY_DEFINE_INSTANCED_PROP(float, _EnvironmentEffect)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShadowStr)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
-            float3 CelColorMix(float3 color1, float3 color2)
-            {
-                return max(color1, color2) * min(color1, color2);
-            }
-            float3 CelColorGradient(float3 color1, float3 color2, float per)
-            {
-                return lerp(color1, color2, per) + CelColorMix(color1, color2) * saturate( 1-abs(per * 2 - 1));
-            }
-
-            MFLightData EditLightingData(MFLightData ld)
-            {
-                ld.shadowAtten = ld.shadowAtten * _SelfShadowStr + 1 - _SelfShadowStr;
-                ld.lightAtten = ld.lightAtten / _LitEdgeBandWidth + _LitEdgeBandWidth;
-                ld.lightAtten = saturate(ld.lightAtten);
-                // ld.lightAtten = smoothstep(0, _LitEdgeBandWidth,ld.lightAtten)/**0 .5*/;
-                ld.lightAtten = lerp(0, ld.lightAtten, _LitIndirectAtten);
-                return ld;
-            }
-
-            void MFCelRampLight(BaseVarying i, MFMatData matData, MFLightData lightData, out float3 diffuse, out float3 specular, out float3 GI)
-            {
-                float shadow = CelShadow(i.posWS, i.normalWS, lightData.lightDir, lightData.shadowAtten);
-
-                diffuse = matData.diffuse;
-                diffuse *= lightData.lightColor * lightData.lightAtten * shadow;
-                specular = GetSpecular(i.normalWS, matData, lightData) * shadow;
-                specular = specular * lightData.lightColor * lightData.lightAtten;
-                GI = SAMPLE_GI(i.lightmapUV, i.vertexSH, i.normalWS) * matData.diffuse;
-            }
-
-            
             half4 frag (BaseVarying i) : SV_Target
             {
-                float2 realUV = i.uv * _BaseTex_ST.xy + _BaseTex_ST.zw;
-                float4 diffuseTex = SAMPLE_TEXTURE2D(_DiffuseTex, sampler_DiffuseTex, realUV);
-                float4 normalTex = SAMPLE_TEXTURE2D(_NormalTex, sampler_NormalTex, realUV);
-                float4 pbsTex = SAMPLE_TEXTURE2D(_PBSTex, sampler_PBSTex, realUV);
-                
                 //MFMatData
-                MFMatData matData = GetMatData(i, diffuseTex.rgb * _BaseColor, diffuseTex.a, normalTex.rg, pbsTex.r, pbsTex.g, pbsTex.b, normalTex.b);
+                MFMatData matData = GetMatData(i, _DiffuseTex, sampler_DiffuseTex, _NormalTex, sampler_NormalTex, _PBSTex, sampler_PBSTex, _DiffuseTex_ST);
                 MFLightData ld = GetLightingData(i, matData);
-                
-                ld = EditLightingData(ld);
-                
+
                 float3 diffuse;
                 float3 specular;
                 float3 GI;
-                MFCelRampLight(i, matData, ld, diffuse, specular, GI);
-                // return half4(CelColorGradient(GI, diffuseTex.rgb, ld.lightAtten),1);
+                MFBaseCelLight(i, matData, ld, diffuse, specular, GI);
+
                 float4 color = matData.alpha;
                 color.rgb = diffuse + specular + GI;
                 return color;

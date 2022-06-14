@@ -9,13 +9,17 @@ Shader"Moonflow/CelSkin"
         _MainTex ("Albedo", 2D) = "white" {}
         _NormalTex("Normal Tex", 2D) = "bump" {}
         _RimMaskTex("Rim Mask Tex", 2D) = "white" {}
+        
         [HDR]_RimColor("Rim Color", Color) = (0.7,0.2,0.17,1)
         _RimFalloff("Rim Falloff", Range(0,10)) = 2
+        
         _ShadowStr("ShadowStr", Range(0,1)) = 0.75
         _FacePlane("FacePlane", Float) = 1
         _BandWidth("BandWidth", Range(0,1))=0.15
-        _EnvironmentEffect("EnvironmentEffect", Range(0,1)) = .2
         _LightIndirectAtten("Light Indirect Atten",Range(0,1)) = 0.5
+        
+        _EnvironmentEffect("EnvironmentEffect", Range(0,1)) = .2
+        
         _HighLightFalloff("HighLightFalloff", float) = 20
         [HDR]_HighLightColor("HighLightColor", Color) = (1,1,1,1)
         

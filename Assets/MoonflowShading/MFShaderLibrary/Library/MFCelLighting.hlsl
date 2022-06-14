@@ -1,11 +1,10 @@
 #ifndef MF_CEL_LIGHTING_INCLUDED
 #define MF_CEL_LIGHTING_INCLUDED
 
+#include "MFStructs.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 #include "MFCelShadow.hlsl"
-UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
-    UNITY_DEFINE_INSTANCED_PROP(float, _ShadowStr)
-UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
+
 
 struct MFLightData
 {
@@ -25,12 +24,25 @@ struct MFLightData
     
 };
 
-float3 GetSpecular(Varying i, MFMatData matData, MFLightData lightData)
+float4 MFGetShadowCoord(float3 positionWS)
+{
+    // #ifdef _MAIN_LIGHT_SHADOWS_CASCADE
+    half cascadeIndex = ComputeCascadeIndex(positionWS);
+    // #else
+    // half cascadeIndex = half(0.0);
+    // #endif
+
+    float4 shadowCoord = mul(_MainLightWorldToShadow[cascadeIndex], float4(positionWS, 1.0));
+
+    return float4(shadowCoord.xyz, 0);
+}
+
+float3 GetSpecular(float3 normalWS, MFMatData matData, MFLightData lightData)
 {
     float3 lightDirectionWSFloat3 = float3(lightData.lightDir);
     float3 halfDir = SafeNormalize(lightDirectionWSFloat3 + float3(matData.viewDirWS));
 
-    float NoH = saturate(dot(float3(i.normalWS), halfDir));
+    float NoH = saturate(dot(float3(normalWS), halfDir));
     half LoH = half(saturate(dot(lightDirectionWSFloat3, halfDir)));
 
     // GGX Distribution multiplied by combined approximation of Visibility and Fresnel
@@ -60,16 +72,17 @@ float3 GetSpecular(Varying i, MFMatData matData, MFLightData lightData)
     return specularTerm * matData.specColor;
 }
 
-MFLightData GetLightingData(Varying i, MFMatData matData)
+MFLightData GetLightingData(BaseVarying i, MFMatData matData)
 {
     MFLightData ld;
-    Light mainLight = GetMainLight(i.shadowCoord);
+    Light mainLight = GetMainLight();
+    mainLight.shadowAttenuation = MainLightRealtimeShadow(i.shadowCoord);
     ld.lightDir = mainLight.direction;
     ld.lightColor = mainLight.color;
-    ld.shadowAtten = mainLight.shadowAttenuation * _ShadowStr + 1-_ShadowStr;
+    ld.shadowAtten = mainLight.shadowAttenuation;
     ld.NdL = dot(i.normalWS, ld.lightDir);
-    ld.lightAtten = max(0,ld.NdL);
     ld.NdLpost = saturate(ld.NdL);
+    ld.lightAtten = ld.NdL;
     ld.VdL = dot(matData.viewDirWS, ld.lightDir);
     ld.h = normalize(ld.lightDir + matData.viewDirWS);
     ld.NdH = dot(i.normalWS, ld.h);
@@ -79,14 +92,13 @@ MFLightData GetLightingData(Varying i, MFMatData matData)
     // ld.lightMask = saturate(ld.NdLpost * shadow)
 }
 
-void CelLight(Varying i, MFMatData matData, MFLightData lightData, out float3 diffuse, out float3 specular, out float3 GI)
+void MFBaseCelLight(BaseVarying i, MFMatData matData, MFLightData lightData, out float3 diffuse, out float3 specular, out float3 GI)
 {
-    float shadow = GetShadow(i, matData);
-    shadow = CelShadow(i, shadow, lightData.lightDir, lightData.shadowAtten);
+    float shadow = CelShadow(i.posWS, i.normalWS, lightData.lightDir, lightData.shadowAtten);
 
     diffuse = matData.diffuse;
-    diffuse *= lightData.lightColor * lightData.lightAtten;
-    specular = GetSpecular(i, matData, lightData) * shadow;
+    diffuse *= lightData.lightColor * lightData.lightAtten * shadow;
+    specular = GetSpecular(i.normalWS, matData, lightData) * shadow;
     specular = specular * lightData.lightColor * lightData.lightAtten;
     GI = SAMPLE_GI(i.lightmapUV, i.vertexSH, i.normalWS) * matData.diffuse;
 }
