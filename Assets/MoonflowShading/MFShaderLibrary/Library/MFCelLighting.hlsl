@@ -80,7 +80,7 @@ MFLightData GetLightingData(BaseVarying i, MFMatData matData)
     ld.lightDir = mainLight.direction;
     ld.lightColor = mainLight.color;
     ld.shadowAtten = mainLight.shadowAttenuation;
-    ld.NdL = dot(i.normalWS, ld.lightDir);
+    ld.NdL = dot(matData.normalWS, ld.lightDir);
     ld.NdLpost = saturate(ld.NdL);
     ld.lightAtten = ld.NdL;
     ld.VdL = dot(matData.viewDirWS, ld.lightDir);

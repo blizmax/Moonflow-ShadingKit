@@ -65,7 +65,8 @@ Shader"Moonflow/CelBase"
             {
                 ld.shadowAtten = ld.shadowAtten * _SelfShadowStr + 1 - _SelfShadowStr;
                 ld.lightAtten = ld.lightAtten / _LitEdgeBandWidth + _LitEdgeBandWidth;
-                ld.lightAtten = saturate(ld.lightAtten);
+                // ld.lightAtten = saturate(ld.lightAtten);
+                ld.lightAtten = smoothstep(0,1,ld.lightAtten);
                 // ld.lightAtten = smoothstep(0, _LitEdgeBandWidth,ld.lightAtten)/**0 .5*/;
                 ld.lightAtten = lerp(0, ld.lightAtten, _LitIndirectAtten);
                 return ld;
@@ -76,10 +77,8 @@ Shader"Moonflow/CelBase"
                 float shadow = CelShadow(i.posWS, i.normalWS, lightData.lightDir, lightData.shadowAtten);
 
                 diffuse = matData.diffuse;
-                diffuse *= lightData.lightColor * lightData.lightAtten * shadow;
-                specular = GetSpecular(i.normalWS, matData, lightData) * shadow;
-                specular = specular * lightData.lightColor * lightData.lightAtten;
-                GI = SAMPLE_GI(i.lightmapUV, i.vertexSH, i.normalWS) * matData.diffuse;
+                specular = GetSpecular(i.normalWS, matData, lightData);
+                GI = SAMPLE_GI(i.lightmapUV, i.vertexSH, i.normalWS);
             }
 
             
@@ -102,7 +101,8 @@ Shader"Moonflow/CelBase"
                 MFCelRampLight(i, matData, ld, diffuse, specular, GI);
                 // return half4(CelColorGradient(GI, diffuseTex.rgb, ld.lightAtten),1);
                 float4 color = matData.alpha;
-                color.rgb = diffuse + specular + GI;
+                color.rgb = diffuse * lerp(1, GI, _EnvironmentEffect) + specular;
+                color.rgb += diffuse * ld.lightAtten * ld.lightColor * ld.shadowAtten;
                 return color;
             }
             ENDHLSL

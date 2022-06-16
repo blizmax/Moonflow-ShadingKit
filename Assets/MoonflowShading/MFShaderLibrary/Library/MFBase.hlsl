@@ -17,9 +17,9 @@ BaseVarying vert(BaseAttributes v)
     o.shadowCoord = TransformWorldToShadowCoord(vpi.positionWS);
     
     VertexNormalInputs vni = GetVertexNormalInputs(v.normalOS, v.tangentOS);
+    o.bitangentWS = vni.bitangentWS;
     o.normalWS = vni.normalWS;
     o.tangentWS = vni.tangentWS;
-    o.bitangentWS = vni.bitangentWS;
 
     OUTPUT_LIGHTMAP_UV(input.lightmapUV, unity_LightmapST, o.lightmapUV);
     OUTPUT_SH(o.normalWS, o.vertexSH);
@@ -41,7 +41,7 @@ MFMatData GetMatData(BaseVarying i, TEXTURE2D_PARAM(dName, dSampler), TEXTURE2D_
     data.roughness2 = data.roughness * data.roughness;
     data.occlusion = pbsTex.b;
     data.normalTS = UnpackNormal(realNormal);
-    data.normalWS = mul(data.normalTS, half3x3(i.tangentWS, i.bitangentWS, i.normalWS));
+    data.normalWS = mul(data.normalTS.xyz, half3x3(i.tangentWS, i.bitangentWS, i.normalWS));
     data.emissive = pbsTex.w;
     data.viewDirWS = i.posWS - _WorldSpaceCameraPos;
     data.ndv = dot(data.normalWS, data.viewDirWS);
@@ -53,7 +53,7 @@ MFMatData GetMatData(BaseVarying i, TEXTURE2D_PARAM(dName, dSampler), TEXTURE2D_
 MFMatData GetMatData(BaseVarying i, float3 iDiffuse, float iAlpha, float2 iNormal, float iMetallic, float iRoughness, float iAO, float iEmission)
 {
     MFMatData data;
-    float4 realNormal = float4(iNormal.r, iNormal.g, 0.5, 1);
+    float4 realNormal = float4(iNormal.r, iNormal.g, 1, 1);
     data.diffuse = iDiffuse;
     data.alpha = iAlpha;
     data.metallic = iMetallic;
@@ -61,7 +61,7 @@ MFMatData GetMatData(BaseVarying i, float3 iDiffuse, float iAlpha, float2 iNorma
     data.roughness2 = data.roughness * data.roughness;
     data.occlusion = iAO;
     data.normalTS = UnpackNormal(realNormal);
-    data.normalWS = mul(data.normalTS, half3x3(i.tangentWS, i.bitangentWS, i.normalWS));
+    data.normalWS = mul(data.normalTS.xyz, half3x3(i.tangentWS, i.bitangentWS, i.normalWS));
     data.emissive = iEmission;
     data.viewDirWS = i.posWS - _WorldSpaceCameraPos;
     data.ndv = dot(data.normalWS, data.viewDirWS);
