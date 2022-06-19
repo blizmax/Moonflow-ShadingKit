@@ -15,18 +15,27 @@ Shader"Moonflow/CelBase"
         _LitIndirectAtten("Lit Indirect Atten",Range(0,1)) = 0.5
         _EnvironmentEffect("EnvironmentEffect", Range(0,1)) = .2
         
+        [Space(10)]
         [MFModuleHeader(Rim)]
         [HDR]_RimColor("Rim Color", Color) = (0.7,0.2,0.17,1)
-        _RimFalloff("Rim Falloff", Range(0.001, 10)) = 2
+        [PowerSlider]_RimFalloff("Rim Falloff", Range(0.001, 10)) = 2
+        
+        [Space(10)]
         [MFModuleHeader(Highlight)]
         [HDR]_HighLightColor("Highlight Color", Color) = (0.7,0.2,0.17,1)
-        [PowerSlider(3.0)]_HighLightFalloff("Highlight Falloff", Range(0.001, 100)) = 2
+        [KeywordEnum(Fresnel, Depth)]_MFCel_HLight("HighLight", Float) = 0
+        [MFKeywordRely(_MFCEL_HLIGHT_FRESNEL)]_HighLightFalloff("Highlight Falloff", Range(0.001, 100)) = 2
+        [MFKeywordRely(_MFCEL_HLIGHT_DEPTH)]_SampleOffset("Sample Offset", Range(0.01,1)) = 1
+        [MFKeywordRely(_MFCEL_HLIGHT_DEPTH)]_DepthThreshold("Depth Threshold", Range(0.001,0.25)) = 1
+        [MFKeywordRelyToggle(_MFCEL_HLIGHT_DEPTH)]_RightSide("Right Side", Float) = 0
         
-        
+        [Space(10)]
         [MFModuleDefinition(_MFCEL_STOCKING)]_Stocking("Stocking", Float) = 0
         [MFModuleDefinition(_MFCEL_FACESDF)]_Face("Face", Float) = 0
         [MFPublicTex(_MFCEL_STOCKING Weave True, _MFCEL_FACESDF SDFShadow False)]
         _MaskTex("Mask Tex", 2D) = "black" {}
+        
+        [MFModuleElement(_Face)]_AngleAmp("AngleAmp", Range(-1,1)) = 0
         
         [MFModuleElement(_Stocking)]_NormalStr("NormalStr", Float) = 1.5
         [MFModuleElement(_Stocking)]_FresnelRatio("FresnelRatio", Range(0,1)) = 1
@@ -46,8 +55,8 @@ Shader"Moonflow/CelBase"
             HLSLPROGRAM
             #include "Library/MFBase.hlsl"
             #include "Library/MFCelLighting.hlsl"
-            #include "Library/MFCelGI.hlsl"
             #pragma shader_feature _ _MFCEL_HAIR _MFCEL_FACESDF _MFCEL_STOCKING
+            #pragma shader_feature _ _MFCEL_HLIGHT_FRESNEL _MFCEL_HLIGHT_DEPTH
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma vertex vert
@@ -65,6 +74,9 @@ Shader"Moonflow/CelBase"
             Texture2D _MaskTex;
             SamplerState sampler_MaskTex;
 
+            Texture2D _CameraDepthTexture;
+            SamplerState sampler_CameraDepthTexture;
+
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(float4, _BaseTex_ST)
                 UNITY_DEFINE_INSTANCED_PROP(float4, _BaseColor)
@@ -78,8 +90,13 @@ Shader"Moonflow/CelBase"
                 UNITY_DEFINE_INSTANCED_PROP(float, _RimFalloff)
                 UNITY_DEFINE_INSTANCED_PROP(float4, _HighLightColor)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HighLightFalloff)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SampleOffset)
+                UNITY_DEFINE_INSTANCED_PROP(float, _DepthThreshold)
             
-                UNITY_DEFINE_INSTANCED_PROP(float4, _MaskTex_ST;)
+                UNITY_DEFINE_INSTANCED_PROP(float4, _MaskTex_ST)
+            
+                UNITY_DEFINE_INSTANCED_PROP(float, _AngleAmp)
+            
                 UNITY_DEFINE_INSTANCED_PROP(float, _NormalStr)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FresnelRatio)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FresnelStart)
@@ -107,11 +124,11 @@ Shader"Moonflow/CelBase"
                 float lightMap = LR > 0 ? lightMapL : lightMapR;
                 lightDir.y = 0;
                 forward.y = 0;
-                float s = dot(-lightDir, forward);
+                float s = saturate(dot(-lightDir, forward) + _AngleAmp);
                 return saturate(step(lightMap , s ));
             }
 
-             half Fabric(half NdV)
+            half Fabric(half NdV)
             {
                 half intensity = 1 - NdV;
                 intensity = 0 - (intensity * 0.4 - pow(intensity, _RimFalloff) ) * 0.35;
@@ -171,14 +188,26 @@ Shader"Moonflow/CelBase"
 
             void Rim(inout float4 color, MFMatData matData, MFLightData lightData)
             {
-                half rim =(saturate(pow(saturate(1-matData.ndv), _RimFalloff))) /** rimMask*/;
-                color.rgb = lerp(color.rgb, matData.diffuse.rgb * _RimColor, saturate(rim) * _RimColor.a + (1-lightData.shadowAtten )/** _SSStr*/);
+                half rim =saturate(pow(saturate(1-matData.ndv), _RimFalloff));
+                color.rgb = lerp(color.rgb, color.rgb * _RimColor, saturate(rim) * _RimColor.a * (1-lightData.lightAtten ));
             }
             void StaticLight(inout float3 color, MFMatData matData)
             {
-                half staticatten = dot(matData.normalWS.xyz, normalize(-cross(normalize(matData.viewDirWS),UNITY_MATRIX_V[1])))  /** rimMask*/ ;
+                half staticatten = dot(matData.normalWS.xyz, normalize(-cross(normalize(matData.viewDirWS),UNITY_MATRIX_V[1])));
                 half3 staticLight = Curve(Smootherstep01(staticatten), max(0.001, _HighLightFalloff)) * _HighLightColor;
                 color += staticLight;
+            }
+            void StaticLight(inout float3 color, BaseVarying i)
+            {
+                float4 clipPos = TransformWorldToHClip(i.posWS);
+                float4 screenPos = ComputeScreenPos(clipPos);
+                screenPos.xy /= screenPos.w;
+                float screenDepth = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy + half2(_SampleOffset * 0.01, 0)), _ZBufferParams);
+                float selfDepth = screenPos.w;
+                float depthDelta = saturate(abs(screenDepth - selfDepth));
+                depthDelta = depthDelta > _DepthThreshold;
+                half3 staticLight = depthDelta * _HighLightColor.rgb;
+                color = lerp(color, staticLight, depthDelta * _HighLightColor.a);
             }
             half4 frag (BaseVarying i) : SV_Target
             {
@@ -186,7 +215,6 @@ Shader"Moonflow/CelBase"
                 float4 diffuseTex = SAMPLE_TEXTURE2D(_DiffuseTex, sampler_DiffuseTex, realUV);
                 float4 normalTex = SAMPLE_TEXTURE2D(_NormalTex, sampler_NormalTex, realUV);
                 float4 pbsTex = SAMPLE_TEXTURE2D(_PBSTex, sampler_PBSTex, realUV);
-                //MFMatData
                 MFMatData matData = GetMatData(i, diffuseTex.rgb * _BaseColor, diffuseTex.a, normalTex.rg, pbsTex.r, pbsTex.g, pbsTex.b, normalTex.b);
                 MFLightData ld = GetLightingData(i, matData);
                 
@@ -198,9 +226,17 @@ Shader"Moonflow/CelBase"
                 MFCelRampLight(i, matData, ld, diffuse, specular, GI);
                 float4 color = matData.alpha;
                 color.rgb = diffuse * lerp(1, GI, _EnvironmentEffect);
+                
                 Rim(color, matData, ld);
-                StaticLight(color.rgb, matData);
+                
                 color.rgb += specular + diffuse * ld.lightAtten * ld.lightColor;
+                
+                #ifdef _MFCEL_HLIGHT_FRESNEL
+                StaticLight(color.rgb, matData);
+                #elif _MFCEL_HLIGHT_DEPTH
+                StaticLight(color.rgb, i);
+                #endif
+                
                 return color;
             }
             ENDHLSL

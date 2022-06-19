@@ -10,20 +10,6 @@ namespace MoonflowShading.Editor
         private Material _mat;
         private bool toggle;
         private bool enabled;
-        
-        private GUIStyle _moduleTitle = new GUIStyle()
-        {
-            // border = new RectOffset(5,5,5,5),
-            padding = new RectOffset(5,5,0,0),
-            margin =  new RectOffset(0,0,20,0),
-            fontSize = 14, 
-            fontStyle = FontStyle.Bold,
-            normal = new GUIStyleState()
-            {
-                textColor = Color.white,
-                background = MFLoadManager.Load<Texture2D>(new MFResInfo("moonflowBanner",""), true)
-            },
-        };
 
         public MFModuleDefinition(string keyword)
         {
@@ -46,7 +32,7 @@ namespace MoonflowShading.Editor
                     _mat.SetFloat(prop.name, enabled ? 1 : 0);
                     if (enabled)
                     {
-                        EditorGUI.LabelField(MFShaderGUIUtility.GetRect(prop), "▣ "+prop.displayName, _moduleTitle);
+                        EditorGUI.LabelField(MFShaderGUIUtility.GetRect(prop), "▣ "+prop.displayName, MFShaderGUIConfig.GetInstance().moduleTitle);
                     }
                 }
                 else
@@ -55,7 +41,7 @@ namespace MoonflowShading.Editor
                     EditorGUI.BeginChangeCheck();
                     EditorGUI.showMixedValue = prop.hasMixedValue;
                     toggle = prop.floatValue == 1f;
-                    toggle = EditorGUI.ToggleLeft(MFShaderGUIUtility.GetRect(prop), prop.displayName, toggle, _moduleTitle);
+                    toggle = EditorGUI.ToggleLeft(MFShaderGUIUtility.GetRect(prop), prop.displayName, toggle, MFShaderGUIConfig.GetInstance().moduleTitle);
                     EditorGUI.showMixedValue = false;
                     if (EditorGUI.EndChangeCheck())
                     {
@@ -68,7 +54,7 @@ namespace MoonflowShading.Editor
         
         public override float GetPropertyHeight(MaterialProperty prop, string label, MaterialEditor editor)
         {
-            return enabled ? 18f: 0;
+            return 0;
         }
         
     }
