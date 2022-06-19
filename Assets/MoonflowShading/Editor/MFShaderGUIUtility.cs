@@ -18,4 +18,8 @@ public static class MFShaderGUIUtility
             scopeList.RegisterHeaderScope(scope.TitleContent, scope.ExpandIndex, scope.DrawEditor);
         }
     }
+    public static Rect GetRect(MaterialProperty prop)
+    {
+        return EditorGUILayout.GetControlRect(true, MaterialEditor.GetDefaultPropertyHeight(prop), EditorStyles.layerMaskField);
+    }
 }

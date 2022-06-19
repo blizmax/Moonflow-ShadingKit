@@ -64,7 +64,7 @@ MFMatData GetMatData(BaseVarying i, float3 iDiffuse, float iAlpha, float2 iNorma
     data.normalWS = mul(data.normalTS.xyz, half3x3(i.tangentWS, i.bitangentWS, i.normalWS));
     data.emissive = iEmission;
     data.viewDirWS = i.posWS - _WorldSpaceCameraPos;
-    data.ndv = dot(data.normalWS, data.viewDirWS);
+    data.ndv = dot(normalize(data.normalWS), -normalize(data.viewDirWS));
     data.oneMinusReflectivity = OneMinusReflectivityMetallic(data.metallic);
     data.specColor = lerp(0.04, data.diffuse, data.metallic);
     return data;

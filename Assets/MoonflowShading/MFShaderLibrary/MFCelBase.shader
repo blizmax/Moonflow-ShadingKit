@@ -2,11 +2,12 @@ Shader"Moonflow/CelBase"
 {
     Properties
     {
-        [Header(Base)]
+        [KeywordEnum(Base, Hair, FaceSDF, Stocking)]_MFCel("MF Cel Type", Float) = 0
+        [MFModuleHeader(Base)]
         _BaseColor("Color", Color) = (1,1,1,1)
-        _DiffuseTex ("Diffuse Tex", 2D) = "white" {}
-        _NormalTex("Normal Tex", 2D) = "bump" {}
-        _PBSTex("Data Tex", 2D) = "black" {}
+        [MFPublicTex]_DiffuseTex ("Diffuse Tex", 2D) = "white" {}
+        [MFPublicTex]_NormalTex("Normal Tex", 2D) = "bump" {}
+        [MFPublicTex]_PBSTex("Data Tex", 2D) = "black" {}
         _BaseTex_ST("TileOffset", Vector) = (1,1,0,0)
         
         _SelfShadowStr("Self Shadow Str", Range(0,1)) = 0.75
@@ -14,27 +15,29 @@ Shader"Moonflow/CelBase"
         _LitIndirectAtten("Lit Indirect Atten",Range(0,1)) = 0.5
         _EnvironmentEffect("EnvironmentEffect", Range(0,1)) = .2
         
-        [Header(Rim)]
+        [MFModuleHeader(Rim)]
         [HDR]_RimColor("Rim Color", Color) = (0.7,0.2,0.17,1)
-        _RimFalloff("Rim Falloff", Range(0,10)) = 2
+        _RimFalloff("Rim Falloff", Range(0.001, 10)) = 2
+        [MFModuleHeader(Highlight)]
+        [HDR]_HighLightColor("Highlight Color", Color) = (0.7,0.2,0.17,1)
+        [PowerSlider(3.0)]_HighLightFalloff("Highlight Falloff", Range(0.001, 100)) = 2
         
-        [Header(Mask)]
+        
+        [MFModuleDefinition(_MFCEL_STOCKING)]_Stocking("Stocking", Float) = 0
+        [MFModuleDefinition(_MFCEL_FACESDF)]_Face("Face", Float) = 0
+        [MFPublicTex(_MFCEL_STOCKING Weave True, _MFCEL_FACESDF SDFShadow False)]
         _MaskTex("Mask Tex", 2D) = "black" {}
-        [Header(Face)]
-        [Toggle(MF_CEL_FACESDF_ON)]_FaceSDF("Face SDF", Float) = 0
         
-        [Header(Stocking)]
-        [Toggle(MF_CEL_STOCKING_ON)]_Stocking("Stocking", Float) = 0
-        _NormalStr("NormalStr", Float) = 1.5
-        _FresnelRatio("FresnelRatio", Range(0,1)) = 1
-        _FresnelStart("FresnelStart", Range(0,1)) = 0.5
-        [HDR]_StockingColor("StockingColor", Color) = (0,0,0,1)
+        [MFModuleElement(_Stocking)]_NormalStr("NormalStr", Float) = 1.5
+        [MFModuleElement(_Stocking)]_FresnelRatio("FresnelRatio", Range(0,1)) = 1
+        [MFModuleElement(_Stocking)]_FresnelStart("FresnelStart", Range(0,1)) = 0.5
+        [MFModuleElement(_Stocking)][HDR]_StockingColor("StockingColor", Color) = (0,0,0,1)
         
         
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags { "RenderType"="Opaque"}
         LOD 100
 
         Pass
@@ -44,8 +47,7 @@ Shader"Moonflow/CelBase"
             #include "Library/MFBase.hlsl"
             #include "Library/MFCelLighting.hlsl"
             #include "Library/MFCelGI.hlsl"
-            #pragma shader_feature MF_CEL_FACESDF_ON
-            #pragma shader_feature MF_CEL_STOCKING_ON
+            #pragma shader_feature _ _MFCEL_HAIR _MFCEL_FACESDF _MFCEL_STOCKING
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma vertex vert
@@ -62,7 +64,6 @@ Shader"Moonflow/CelBase"
 
             Texture2D _MaskTex;
             SamplerState sampler_MaskTex;
-            float4 _MaskTex_ST;
 
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(float4, _BaseTex_ST)
@@ -75,7 +76,10 @@ Shader"Moonflow/CelBase"
             
                 UNITY_DEFINE_INSTANCED_PROP(float4, _RimColor)
                 UNITY_DEFINE_INSTANCED_PROP(float, _RimFalloff)
+                UNITY_DEFINE_INSTANCED_PROP(float4, _HighLightColor)
+                UNITY_DEFINE_INSTANCED_PROP(float, _HighLightFalloff)
             
+                UNITY_DEFINE_INSTANCED_PROP(float4, _MaskTex_ST;)
                 UNITY_DEFINE_INSTANCED_PROP(float, _NormalStr)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FresnelRatio)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FresnelStart)
@@ -130,12 +134,11 @@ Shader"Moonflow/CelBase"
 
             float3 StockingDiffuse(float3 baseColor, float2 uv, MFMatData matData, MFLightData lightData)
             {
-                float ndv = saturate(dot(matData.normalWS, -normalize(matData.viewDirWS)));
                 half weaveMask = max(0, SAMPLE_TEXTURE2D(_MaskTex, sampler_MaskTex, uv * _MaskTex_ST.xy + _MaskTex_ST.zw) * _NormalStr);
                 half shade = lerp(0, lightData.NdL * 0.5 + 0.5, lightData.shadowAtten);
-                half stockingFabric = Fabric(ndv) * clamp(shade, 0.5, 1);
-                half stockingAlpha = StockingAlpha(weaveMask, ndv, uv);
-                half highlight = saturate(1-stockingAlpha) * half4(Curve(ndv.xxx,15),1);
+                half stockingFabric = Fabric(matData.ndv) * clamp(shade, 0.5, 1);
+                half stockingAlpha = StockingAlpha(weaveMask, matData.ndv, uv);
+                half highlight = saturate(1-stockingAlpha) * half4(Curve(matData.ndv.xxx,15),1);
                 baseColor = baseColor * (1-stockingAlpha)+_StockingColor * stockingAlpha + highlight*0.05;
                 return lerp(baseColor, _RimColor, saturate(stockingFabric));
             }
@@ -143,7 +146,7 @@ Shader"Moonflow/CelBase"
             MFLightData EditLightingData(MFLightData ld, float2 uv)
             {
                 ld.shadowAtten = ld.shadowAtten * _SelfShadowStr + 1 - _SelfShadowStr;
-                #ifdef MF_CEL_FACESDF_ON
+                #ifdef _MFCEL_FACESDF
                 ld.lightAtten = SDFFace(ld.lightDir, -unity_ObjectToWorld._m20_m21_m22, uv);
                 #endif
                 ld.lightAtten = ld.lightAtten / _LitEdgeBandWidth + _LitEdgeBandWidth;
@@ -158,7 +161,7 @@ Shader"Moonflow/CelBase"
                 float shadow = CelShadow(i.posWS, i.normalWS, lightData.lightDir, lightData.shadowAtten);
 
                 diffuse = matData.diffuse;
-                #ifdef MF_CEL_STOCKING_ON
+                #ifdef _MFCEL_STOCKING
                 diffuse = StockingDiffuse(diffuse, i.uv, matData, lightData);
                 #endif
                 
@@ -166,14 +169,23 @@ Shader"Moonflow/CelBase"
                 GI = SAMPLE_GI(i.lightmapUV, i.vertexSH, i.normalWS);
             }
 
-            
+            void Rim(inout float4 color, MFMatData matData, MFLightData lightData)
+            {
+                half rim =(saturate(pow(saturate(1-matData.ndv), _RimFalloff))) /** rimMask*/;
+                color.rgb = lerp(color.rgb, matData.diffuse.rgb * _RimColor, saturate(rim) * _RimColor.a + (1-lightData.shadowAtten )/** _SSStr*/);
+            }
+            void StaticLight(inout float3 color, MFMatData matData)
+            {
+                half staticatten = dot(matData.normalWS.xyz, normalize(-cross(normalize(matData.viewDirWS),UNITY_MATRIX_V[1])))  /** rimMask*/ ;
+                half3 staticLight = Curve(Smootherstep01(staticatten), max(0.001, _HighLightFalloff)) * _HighLightColor;
+                color += staticLight;
+            }
             half4 frag (BaseVarying i) : SV_Target
             {
                 float2 realUV = i.uv * _BaseTex_ST.xy + _BaseTex_ST.zw;
                 float4 diffuseTex = SAMPLE_TEXTURE2D(_DiffuseTex, sampler_DiffuseTex, realUV);
                 float4 normalTex = SAMPLE_TEXTURE2D(_NormalTex, sampler_NormalTex, realUV);
                 float4 pbsTex = SAMPLE_TEXTURE2D(_PBSTex, sampler_PBSTex, realUV);
-                
                 //MFMatData
                 MFMatData matData = GetMatData(i, diffuseTex.rgb * _BaseColor, diffuseTex.a, normalTex.rg, pbsTex.r, pbsTex.g, pbsTex.b, normalTex.b);
                 MFLightData ld = GetLightingData(i, matData);
@@ -185,8 +197,10 @@ Shader"Moonflow/CelBase"
                 float3 GI;
                 MFCelRampLight(i, matData, ld, diffuse, specular, GI);
                 float4 color = matData.alpha;
-                color.rgb = diffuse * lerp(1, GI, _EnvironmentEffect) + specular;
-                color.rgb += diffuse * ld.lightAtten * ld.lightColor;
+                color.rgb = diffuse * lerp(1, GI, _EnvironmentEffect);
+                Rim(color, matData, ld);
+                StaticLight(color.rgb, matData);
+                color.rgb += specular + diffuse * ld.lightAtten * ld.lightColor;
                 return color;
             }
             ENDHLSL
