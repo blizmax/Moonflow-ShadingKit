@@ -115,7 +115,6 @@ Shader"Moonflow/CelBase"
                 UNITY_DEFINE_INSTANCED_PROP(float, _HighLightFalloff)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SampleOffset)
                 UNITY_DEFINE_INSTANCED_PROP(float, _DepthThreshold)
-                // UNITY_DEFINE_INSTANCED_PROP(float, _HLight_DoubleSide)
             
                 UNITY_DEFINE_INSTANCED_PROP(float4, _MaskTex_ST)
             
@@ -233,6 +232,22 @@ Shader"Moonflow/CelBase"
                 half3 staticLight = depthDelta * _HighLightColor.rgb;
                 color = lerp(color, staticLight, depthDelta * _HighLightColor.a);
             }
+            void StaticLight(inout float3 color, BaseVarying i, float3 viewDir, float3 lightDir)
+            {
+                float4 clipPos = TransformWorldToHClip(i.posWS);
+                float4 screenPos = ComputeScreenPos(clipPos);
+                screenPos.xy /= screenPos.w;
+                float2 screenDepth = 0;
+                screenDepth.x = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy + half2(_SampleOffset * 0.01, 0)), _ZBufferParams);
+                screenDepth.y = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy - half2(_SampleOffset * 0.01, 0)), _ZBufferParams);
+                float selfDepth = screenPos.w;
+                float2 depthDelta = saturate(screenDepth - selfDepth)> _DepthThreshold;
+                float VdL = dot(-viewDir, -lightDir);
+                depthDelta.x *= VdL * 0.45 + 0.55;
+                depthDelta.y *= (- VdL) * 0.45 + 0.55;
+                float delta = max(depthDelta.x, depthDelta.y);
+                color = lerp(color, delta * _HighLightColor.rgb, delta * _HighLightColor.a);
+            }
             half4 frag (BaseVarying i) : SV_Target
             {
                 float2 realUV = i.uv * _BaseTex_ST.xy + _BaseTex_ST.zw;
@@ -259,6 +274,8 @@ Shader"Moonflow/CelBase"
                 StaticLight(color.rgb, matData);
                 #elif _MFCEL_HLIGHT_DEPTH
                 StaticLight(color.rgb, i);
+                #elif _MFCEL_HLIGHT_DOUBLESIDEDEPTH
+                StaticLight(color.rgb, i, ld.lightDir, UNITY_MATRIX_V[0]);
                 #endif
                 
                 return color;
