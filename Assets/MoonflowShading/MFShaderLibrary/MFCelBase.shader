@@ -3,6 +3,7 @@ Shader"Moonflow/CelBase"
     Properties
     {
         [KeywordEnum(Base, Hair, FaceSDF, Stocking)]_MFCel("MF Cel Type", Float) = 0
+        /*======= Base =======*/
         [MFModuleHeader(Base)]
         _BaseColor("Color", Color) = (1,1,1,1)
         [MFPublicTex]_DiffuseTex ("Diffuse Tex", 2D) = "white" {}
@@ -15,32 +16,54 @@ Shader"Moonflow/CelBase"
         _LitIndirectAtten("Lit Indirect Atten",Range(0,1)) = 0.5
         _EnvironmentEffect("EnvironmentEffect", Range(0,1)) = .2
         
+        /*======= Rim =======*/
         [Space(10)]
         [MFModuleHeader(Rim)]
         [HDR]_RimColor("Rim Color", Color) = (0.7,0.2,0.17,1)
         [PowerSlider]_RimFalloff("Rim Falloff", Range(0.001, 10)) = 2
         
+        /*======= HighLight =======*/
         [Space(10)]
         [MFModuleHeader(Highlight)]
         [HDR]_HighLightColor("Highlight Color", Color) = (0.7,0.2,0.17,1)
-        [KeywordEnum(Fresnel, Depth)]_MFCel_HLight("HighLight", Float) = 0
-        [MFKeywordRely(_MFCEL_HLIGHT_FRESNEL)]_HighLightFalloff("Highlight Falloff", Range(0.001, 100)) = 2
-        [MFKeywordRely(_MFCEL_HLIGHT_DEPTH)]_SampleOffset("Sample Offset", Range(0.01,1)) = 1
-        [MFKeywordRely(_MFCEL_HLIGHT_DEPTH)]_DepthThreshold("Depth Threshold", Range(0.001,0.25)) = 1
-        [MFKeywordRelyToggle(_MFCEL_HLIGHT_DEPTH)]_RightSide("Right Side", Float) = 0
         
+        [KeywordEnum(None, Fresnel, Depth, DoubleSideDepth)]
+        _MFCel_HLight("HighLight", Float) = 0
+        
+        [MFKeywordRely(_MFCEL_HLIGHT_FRESNEL)]
+        _HighLightFalloff("Highlight Falloff", Range(0.001, 100)) = 2
+        
+        [MFKeywordRely(_MFCEL_HLIGHT_DEPTH, _MFCEL_HLIGHT_DOUBLESIDEDEPTH)]
+        _SampleOffset("Sample Offset", Range(0.01,1)) = 1
+        
+        [MFKeywordRely(_MFCEL_HLIGHT_DEPTH, _MFCEL_HLIGHT_DOUBLESIDEDEPTH)]
+        _DepthThreshold("Depth Threshold", Range(0.001,0.25)) = 1
+        
+        /*======= Defination =======*/
         [Space(10)]
         [MFModuleDefinition(_MFCEL_STOCKING)]_Stocking("Stocking", Float) = 0
         [MFModuleDefinition(_MFCEL_FACESDF)]_Face("Face", Float) = 0
+        
+        /*======= Mask Tex=======*/
         [MFPublicTex(_MFCEL_STOCKING Weave True, _MFCEL_FACESDF SDFShadow False)]
         _MaskTex("Mask Tex", 2D) = "black" {}
         
-        [MFModuleElement(_Face)]_AngleAmp("AngleAmp", Range(-1,1)) = 0
+        /*======= SDF Face =======*/
+        [MFModuleElement(_Face)]
+        _AngleAmp("AngleAmp", Range(-1,1)) = 0
         
-        [MFModuleElement(_Stocking)]_NormalStr("NormalStr", Float) = 1.5
-        [MFModuleElement(_Stocking)]_FresnelRatio("FresnelRatio", Range(0,1)) = 1
-        [MFModuleElement(_Stocking)]_FresnelStart("FresnelStart", Range(0,1)) = 0.5
-        [MFModuleElement(_Stocking)][HDR]_StockingColor("StockingColor", Color) = (0,0,0,1)
+        /*======= Stocking =======*/
+        [MFModuleElement(_Stocking)]
+        _NormalStr("NormalStr", Float) = 1.5
+        
+        [MFModuleElement(_Stocking)]
+        _FresnelRatio("FresnelRatio", Range(0,1)) = 1
+        
+        [MFModuleElement(_Stocking)]
+        _FresnelStart("FresnelStart", Range(0,1)) = 0.5
+        
+        [MFModuleElement(_Stocking)]
+        [HDR]_StockingColor("StockingColor", Color) = (0,0,0,1)
         
         
     }
@@ -56,7 +79,7 @@ Shader"Moonflow/CelBase"
             #include "Library/MFBase.hlsl"
             #include "Library/MFCelLighting.hlsl"
             #pragma shader_feature _ _MFCEL_HAIR _MFCEL_FACESDF _MFCEL_STOCKING
-            #pragma shader_feature _ _MFCEL_HLIGHT_FRESNEL _MFCEL_HLIGHT_DEPTH
+            #pragma shader_feature _ _MFCEL_HLIGHT_FRESNEL _MFCEL_HLIGHT_DEPTH _MFCEL_HLIGHT_DOUBLESIDEDEPTH
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma vertex vert
@@ -92,6 +115,7 @@ Shader"Moonflow/CelBase"
                 UNITY_DEFINE_INSTANCED_PROP(float, _HighLightFalloff)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SampleOffset)
                 UNITY_DEFINE_INSTANCED_PROP(float, _DepthThreshold)
+                // UNITY_DEFINE_INSTANCED_PROP(float, _HLight_DoubleSide)
             
                 UNITY_DEFINE_INSTANCED_PROP(float4, _MaskTex_ST)
             
@@ -121,11 +145,11 @@ Shader"Moonflow/CelBase"
                 float lightMapL = SAMPLE_TEXTURE2D(_MaskTex, sampler_MaskTex, uv).r;
                 float lightMapR = SAMPLE_TEXTURE2D(_MaskTex, sampler_MaskTex, flipUV).r;
 
-                float lightMap = LR > 0 ? lightMapL : lightMapR;
+                float lightMap = LR < 0 ? lightMapL : lightMapR;
                 lightDir.y = 0;
                 forward.y = 0;
                 float s = saturate(dot(-lightDir, forward) + _AngleAmp);
-                return saturate(step(lightMap , s ));
+                return saturate(step(1-lightMap , s ));
             }
 
             half Fabric(half NdV)
@@ -204,7 +228,7 @@ Shader"Moonflow/CelBase"
                 screenPos.xy /= screenPos.w;
                 float screenDepth = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy + half2(_SampleOffset * 0.01, 0)), _ZBufferParams);
                 float selfDepth = screenPos.w;
-                float depthDelta = saturate(abs(screenDepth - selfDepth));
+                float depthDelta = saturate((screenDepth - selfDepth));
                 depthDelta = depthDelta > _DepthThreshold;
                 half3 staticLight = depthDelta * _HighLightColor.rgb;
                 color = lerp(color, staticLight, depthDelta * _HighLightColor.a);

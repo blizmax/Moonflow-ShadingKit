@@ -18,7 +18,7 @@ Shader"Moonflow/BaseLight"
             HLSLPROGRAM
             #include "Library/MFBase.hlsl"
             #include "Library/MFCelLighting.hlsl"
-            #include "Library/MFCelGI.hlsl"
+            // #include "Library/MFCelGI.hlsl"
             #pragma shader_feature MF_CEL_NORMALTEX
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE

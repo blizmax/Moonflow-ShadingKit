@@ -6,10 +6,10 @@ namespace MoonflowShading.Editor
 {
     public class MFKeywordRelyDrawer: MaterialPropertyDrawer
     {
-        private string _relyKeyword;
+        private string[] _relyKeyword;
         private Material _mat;
 
-        public MFKeywordRelyDrawer(string keyword)
+        public MFKeywordRelyDrawer(params string[] keyword)
         {
             _relyKeyword = keyword;
         }
@@ -17,9 +17,15 @@ namespace MoonflowShading.Editor
         public override void OnGUI(Rect position, MaterialProperty prop, string label, MaterialEditor editor)
         {
             _mat = editor.target as Material;
-            if (_mat != null && _mat.IsKeywordEnabled(_relyKeyword))
-            { 
-                editor.DefaultShaderProperty(prop, label);
+            if (_mat != null)
+            {
+                for (int i = 0; i < _relyKeyword.Length; i++)
+                {
+                    if (_mat.IsKeywordEnabled(_relyKeyword[i]))
+                    {
+                        editor.DefaultShaderProperty(prop, label);
+                    }
+                }
             }
         }
 
