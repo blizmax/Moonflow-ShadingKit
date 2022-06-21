@@ -22,7 +22,7 @@ public class MFCelShaderGUI : MFShaderGUI
         GI = 1 << 5,
     }
 
-    private MFShaderModuleScope[] _shaderModuleScope;
+    // private MFShaderModuleScope[] _shaderModuleScope;
     private MaterialHeaderScopeList m_MaterialScopeList =
         new MaterialHeaderScopeList(uint.MaxValue & ~(uint)MFCelExpand.GI);
 
@@ -36,11 +36,13 @@ public class MFCelShaderGUI : MFShaderGUI
             Register(_material, _materialEditor);
             _hasInit = true;
         }
-        
+
+        DrawTitle(_materialEditor);
         FindProperties(properties);
         OnTopGUI(materialEditor, properties);
         DrawGUI();
         base.OnGUI(materialEditor, properties);
+        OnBottomGUI(materialEditor, properties);
     }
 
     private void DrawGUI()
@@ -50,15 +52,15 @@ public class MFCelShaderGUI : MFShaderGUI
 
     private void Register(Material material, MaterialEditor materialEditor)
     {
-        _shaderModuleScope = new[]
-        {
-            new MFShaderRenderOptionModule((uint)MFCelExpand.RenderOption, _materialEditor),
-        };
+        // _shaderModuleScope = new[]
+        // {
+        //     new MFShaderRenderOptionModule((uint)MFCelExpand.RenderOption, _materialEditor),
+        // };
         var filter = materialFilter;
-        for (int i = 0; i < _shaderModuleScope.Length; i++)
-        {
-            _shaderModuleScope[i].MFShaderModuleScopeRegister(filter, ref m_MaterialScopeList);
-        }
+        // for (int i = 0; i < _shaderModuleScope.Length; i++)
+        // {
+        //     _shaderModuleScope[i].MFShaderModuleScopeRegister(filter, ref m_MaterialScopeList);
+        // }
     }
 
     public override void FindProperties(MaterialProperty[] properties)
@@ -68,9 +70,9 @@ public class MFCelShaderGUI : MFShaderGUI
         if (material == null)
             return;
 
-        for (int i = 0; i < _shaderModuleScope.Length; i++)
-        {
-            _shaderModuleScope[i].FindProperties(properties);
-        }
+        // for (int i = 0; i < _shaderModuleScope.Length; i++)
+        // {
+        //     _shaderModuleScope[i].FindProperties(properties);
+        // }
     }
 }

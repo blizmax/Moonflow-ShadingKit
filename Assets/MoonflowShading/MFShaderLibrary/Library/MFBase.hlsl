@@ -47,6 +47,7 @@ MFMatData GetMatData(BaseVarying i, TEXTURE2D_PARAM(dName, dSampler), TEXTURE2D_
     data.ndv = dot(data.normalWS, data.viewDirWS);
     data.oneMinusReflectivity = OneMinusReflectivityMetallic(data.metallic);
     data.specColor = lerp(0.04, data.diffuse, data.metallic);
+    data.mask = 1;
     return data;
 }
 
@@ -67,6 +68,7 @@ MFMatData GetMatData(BaseVarying i, float3 iDiffuse, float iAlpha, float2 iNorma
     data.ndv = dot(normalize(data.normalWS), -normalize(data.viewDirWS));
     data.oneMinusReflectivity = OneMinusReflectivityMetallic(data.metallic);
     data.specColor = lerp(0.04, data.diffuse, data.metallic);
+    data.mask = 1;
     return data;
 }
 

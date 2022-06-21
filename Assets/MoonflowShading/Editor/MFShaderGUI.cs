@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using MoonflowShading.Editor;
 using UnityEditor;
 using UnityEngine;
 
@@ -16,7 +17,18 @@ public class MFShaderGUI : ShaderGUI
         Material targetMat = materialEditor.target as Material;
         MakeKeywordList(targetMat.shaderKeywords);
     }
+    
+    protected void OnBottomGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
+    {
+        Material targetMat = materialEditor.target as Material;
+        // MakeKeywordList(targetMat.shaderKeywords);
+    }
 
+    protected void DrawTitle(MaterialEditor materialEditor)
+    {
+        Material mat = materialEditor.target as Material;
+        EditorGUILayout.LabelField("▣ "+ materialEditor.target.name, MFShaderGUIConfig.GetInstance().ModuleTitle);
+    }
     private void MakeKeywordList(string[] keywordArr)
     {
         keywords = "";

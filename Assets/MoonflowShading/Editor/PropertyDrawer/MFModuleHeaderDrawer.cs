@@ -14,7 +14,7 @@ namespace MoonflowShading.Editor
  
         public override void OnGUI(Rect position, MaterialProperty prop, string label, MaterialEditor editor)
         {
-            EditorGUI.LabelField(MFShaderGUIUtility.GetRect(prop), "▣ "+ title, MFShaderGUIConfig.GetInstance().moduleTitle);
+            EditorGUI.LabelField(MFShaderGUIUtility.GetRect(prop), "▣ "+ title, MFShaderGUIConfig.GetInstance().ModuleTitle);
             editor.DefaultShaderProperty(prop,label);
         }
         

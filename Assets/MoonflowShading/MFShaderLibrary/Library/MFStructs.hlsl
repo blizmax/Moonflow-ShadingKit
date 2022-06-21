@@ -9,6 +9,7 @@ struct MFMatData
     float roughness;
     float roughness2;
     float occlusion;
+    float4 mask;
     float3 normalTS;
     float3 normalWS;
     float3 emissive;

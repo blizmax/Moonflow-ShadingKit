@@ -2,6 +2,7 @@ Shader"Moonflow/CelBase"
 {
     Properties
     {
+//        [MFHeader(CelBase)]
         [KeywordEnum(Base, Hair, FaceSDF, Stocking)]_MFCel("MF Cel Type", Float) = 0
         /*======= Base =======*/
         [MFModuleHeader(Base)]
@@ -51,6 +52,8 @@ Shader"Moonflow/CelBase"
         /*======= SDF Face =======*/
         [MFModuleElement(_Face)]
         _AngleAmp("AngleAmp", Range(-1,1)) = 0
+        [MFModuleElement(_Face)]
+        _FaceShadowBandwidth("Face Shadow BandWidth", Range(0,0.25)) = 0
         
         /*======= Stocking =======*/
         [MFModuleElement(_Stocking)]
@@ -119,6 +122,7 @@ Shader"Moonflow/CelBase"
                 UNITY_DEFINE_INSTANCED_PROP(float4, _MaskTex_ST)
             
                 UNITY_DEFINE_INSTANCED_PROP(float, _AngleAmp)
+                UNITY_DEFINE_INSTANCED_PROP(float, _FaceShadowBandwidth)
             
                 UNITY_DEFINE_INSTANCED_PROP(float, _NormalStr)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FresnelRatio)
@@ -148,7 +152,7 @@ Shader"Moonflow/CelBase"
                 lightDir.y = 0;
                 forward.y = 0;
                 float s = saturate(dot(-lightDir, forward) + _AngleAmp);
-                return saturate(step(1-lightMap , s ));
+                return saturate(smoothstep(1-lightMap - _FaceShadowBandwidth , 1-lightMap + _FaceShadowBandwidth, s ));
             }
 
             half Fabric(half NdV)
@@ -196,6 +200,31 @@ Shader"Moonflow/CelBase"
             }
 
 
+            // float3 HairLighting (float3 tangent, float3 normal, float3 lightVec, 
+            //          float3 viewVec, float2 uv, float smoothness, float shiftTex)
+            // {
+            //     float3 bitangent = -normalize(cross(tangent, normal));
+            //     // shift tangents
+            //     shiftTex *= _SpecMaskOffset;
+            //     float3 t1 = ShiftTangent(bitangent, normal, /*primaryShift*/_Shift + shiftTex);
+            //     float3 t2 = ShiftTangent(bitangent, normal, /*secondaryShift*/_Shift + shiftTex) ;
+            //
+            //     // diffuse lighting
+            //     smoothness = saturate(smoothness - 0.3);
+            //     // specular lighting
+            //     // add second specular term
+            //     float3 specular = _SpecColor1 * StrandSpecular(t1, viewVec, lightVec, 0.1/_Layer1Offset) * _Layer1Intensity;
+            //     specular += _SpecColor2 * StrandSpecular(t2, viewVec, lightVec, 0.1/_Layer2Offset) * _Layer2Intensity;
+            //     
+            //     // Final color
+            //     // float3 o;
+            //     // o.rgb = (diffuse + specular) * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv); /** lightColor*/;
+            //     // o.rgb *= ambOcc; 
+            //     // o.a = tex2D(tAlpha, uv);
+            //
+            //     return specular;
+            // }
+
             void MFCelRampLight(BaseVarying i, MFMatData matData, MFLightData lightData, out float3 diffuse, out float3 specular, out float3 GI)
             {
                 float shadow = CelShadow(i.posWS, i.normalWS, lightData.lightDir, lightData.shadowAtten);
@@ -204,8 +233,13 @@ Shader"Moonflow/CelBase"
                 #ifdef _MFCEL_STOCKING
                 diffuse = StockingDiffuse(diffuse, i.uv, matData, lightData);
                 #endif
-                
+
+                // #ifdef _MFCEL_HAIR
+                float shiftTex = SAMPLE_TEXTURE2D(_MaskTex, sampler_MaskTex, i.uv * _MaskTex_ST.xy + _MaskTex_ST.zw);
+                // float3 hairSpecColor = HairLighting(normalize(i.tangentWS), normalize(i.normalWS), normalize(lightData.lightDir), normalize(matData.viewDirWS), i.uv.xy, 1 - matData.roughness, shiftTex);
+                // #else
                 specular = GetSpecular(i.normalWS, matData, lightData);
+                // #endif
                 GI = SAMPLE_GI(i.lightmapUV, i.vertexSH, i.normalWS);
             }
 
@@ -255,6 +289,7 @@ Shader"Moonflow/CelBase"
                 float4 normalTex = SAMPLE_TEXTURE2D(_NormalTex, sampler_NormalTex, realUV);
                 float4 pbsTex = SAMPLE_TEXTURE2D(_PBSTex, sampler_PBSTex, realUV);
                 MFMatData matData = GetMatData(i, diffuseTex.rgb * _BaseColor, diffuseTex.a, normalTex.rg, pbsTex.r, pbsTex.g, pbsTex.b, normalTex.b);
+                
                 MFLightData ld = GetLightingData(i, matData);
                 
                 ld = EditLightingData(ld, i.uv);
@@ -347,4 +382,5 @@ Shader"Moonflow/CelBase"
             ENDHLSL
         }
     }
+    CustomEditor "MFCelShaderGUI"
 }

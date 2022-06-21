@@ -32,7 +32,7 @@ namespace MoonflowShading.Editor
                     _mat.SetFloat(prop.name, enabled ? 1 : 0);
                     if (enabled)
                     {
-                        EditorGUI.LabelField(MFShaderGUIUtility.GetRect(prop), "▣ "+prop.displayName, MFShaderGUIConfig.GetInstance().moduleTitle);
+                        EditorGUI.LabelField(MFShaderGUIUtility.GetRect(prop), "▣ "+prop.displayName, MFShaderGUIConfig.GetInstance().ModuleTitle);
                     }
                 }
                 else
@@ -41,7 +41,7 @@ namespace MoonflowShading.Editor
                     EditorGUI.BeginChangeCheck();
                     EditorGUI.showMixedValue = prop.hasMixedValue;
                     toggle = prop.floatValue == 1f;
-                    toggle = EditorGUI.ToggleLeft(MFShaderGUIUtility.GetRect(prop), prop.displayName, toggle, MFShaderGUIConfig.GetInstance().moduleTitle);
+                    toggle = EditorGUI.ToggleLeft(MFShaderGUIUtility.GetRect(prop), prop.displayName, toggle, MFShaderGUIConfig.GetInstance().ModuleTitle);
                     EditorGUI.showMixedValue = false;
                     if (EditorGUI.EndChangeCheck())
                     {
