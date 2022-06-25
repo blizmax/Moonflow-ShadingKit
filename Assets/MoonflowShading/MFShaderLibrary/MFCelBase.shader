@@ -76,8 +76,8 @@ Shader"Moonflow/CelBase"
         [MFModuleElement(_Hair)]
         [HDR]_SpecColor2("Layer2 Color", Color) = (1,1,1,1)
         
-        [MFSplitVectorDrawer(_Hair, SpecMaskOffset#1#0_1 Shift#1 Layer1Offset#1#0.01_1 Layer2Offset#1#0.01_1)]
-        _HairData("HairData", Color) = (1,1,1,1)
+        [MFSplitVectorDrawer(_Hair, SpecMaskOffset#1#0_1 Shift#1 Layer1Offset#1#0.0001_1 Layer2Offset#1#0.0001_1)]
+        _HairData("HairData", Vector) = (1,1,1,1)
         
     }
     SubShader
@@ -237,14 +237,13 @@ Shader"Moonflow/CelBase"
                 // shift tangents
                 shiftTex *= _SpecMaskOffset;
                 float3 t1 = ShiftTangent(bitangent, normal, /*primaryShift*/_Shift + shiftTex);
-                float3 t2 = ShiftTangent(bitangent, normal, /*secondaryShift*/_Shift + shiftTex) ;
-            
+                // float3 t2 = ShiftTangent(bitangent, normal, /*secondaryShift*/_Shift + shiftTex) ;
                 // diffuse lighting
                 smoothness = saturate(smoothness - 0.3);
                 // specular lighting
                 // add second specular term
-                float3 specular = _SpecColor1 * StrandSpecular(t1, viewVec, lightVec, 0.1/_Layer1Offset);
-                specular += _SpecColor2 * StrandSpecular(t2, viewVec, lightVec, 0.1/_Layer2Offset);
+                float3 specular = _SpecColor1.rgb * StrandSpecular(t1, viewVec, lightVec, 0.1/_Layer1Offset) * _SpecColor1.a;
+                specular += _SpecColor2.rgb * StrandSpecular(t1, viewVec, lightVec, 0.1/_Layer2Offset) * _SpecColor2.a;
                 
                 // Final color
                 // float3 o;
@@ -266,6 +265,7 @@ Shader"Moonflow/CelBase"
 
                 #ifdef _MFCEL_HAIR
                 float shiftTex = SAMPLE_TEXTURE2D(_MaskTex, sampler_MaskTex, i.uv * _MaskTex_ST.xy + _MaskTex_ST.zw);
+                // specular = shiftTex.xxx;
                 specular = HairLighting(normalize(i.tangentWS), normalize(i.normalWS), normalize(lightData.lightDir), normalize(matData.viewDirWS), i.uv.xy, 1 - matData.roughness, shiftTex);
                 #else
                 specular = GetSpecular(i.normalWS, matData, lightData);
@@ -325,7 +325,7 @@ Shader"Moonflow/CelBase"
                 float3 diffuse;
                 float3 specular;
                 float3 GI;
-                MFCelRampLight(i, matData, ld, diffuse, specular, GI);
+                MFCelRampLight(i, matData, ld, diffuse, specular, GI);  
                 float4 color = matData.alpha;
                 color.rgb = diffuse * lerp(1, GI, _EnvironmentEffect);
                 
