@@ -44,9 +44,10 @@ Shader"Moonflow/CelBase"
         [Space(10)]
         [MFModuleDefinition(_MFCEL_STOCKING)]_Stocking("Stocking", Float) = 0
         [MFModuleDefinition(_MFCEL_FACESDF)]_Face("Face", Float) = 0
+        [MFModuleDefinition(_MFCEL_HAIR)]_Hair("Hair", Float) = 0
         
         /*======= Mask Tex=======*/
-        [MFPublicTex(_MFCEL_STOCKING Weave True, _MFCEL_FACESDF SDFShadow False)]
+        [MFPublicTex(_MFCEL_STOCKING Weave True, _MFCEL_FACESDF SDFShadow False, _MFCEL_HAIR Shifting True)]
         _MaskTex("Mask Tex", 2D) = "black" {}
         
         /*======= SDF Face =======*/
@@ -68,6 +69,15 @@ Shader"Moonflow/CelBase"
         [MFModuleElement(_Stocking)]
         [HDR]_StockingColor("StockingColor", Color) = (0,0,0,1)
         
+        /*========= Hair =========*/
+        [MFModuleElement(_Hair)]
+        [HDR]_SpecColor1("Layer1 Color", Color) = (1,1,1,1)
+        
+        [MFModuleElement(_Hair)]
+        [HDR]_SpecColor2("Layer2 Color", Color) = (1,1,1,1)
+        
+        [MFSplitVectorDrawer(_Hair, SpecMaskOffset#1#0_1 Shift#1 Layer1Offset#1#0.01_1 Layer2Offset#1#0.01_1)]
+        _HairData("HairData", Color) = (1,1,1,1)
         
     }
     SubShader
@@ -128,6 +138,10 @@ Shader"Moonflow/CelBase"
                 UNITY_DEFINE_INSTANCED_PROP(float, _FresnelRatio)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FresnelStart)
                 UNITY_DEFINE_INSTANCED_PROP(float3, _StockingColor)
+
+                UNITY_DEFINE_INSTANCED_PROP(float4, _SpecColor1)
+                UNITY_DEFINE_INSTANCED_PROP(float4, _SpecColor2)
+                UNITY_DEFINE_INSTANCED_PROP(float4, _HairData)
             
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
@@ -145,10 +159,9 @@ Shader"Moonflow/CelBase"
                 float LR = cross(forward, -lightDir).y;
                 // 左右翻转
                 float2 flipUV = float2(1 - uv.x, uv.y);
-                float lightMapL = SAMPLE_TEXTURE2D(_MaskTex, sampler_MaskTex, uv).r;
-                float lightMapR = SAMPLE_TEXTURE2D(_MaskTex, sampler_MaskTex, flipUV).r;
+                float lightMap = SAMPLE_TEXTURE2D(_MaskTex, sampler_MaskTex, LR < 0 ? uv : flipUV).r;
 
-                float lightMap = LR < 0 ? lightMapL : lightMapR;
+                // float lightMap = LR < 0 ? lightMapL : lightMapR;
                 lightDir.y = 0;
                 forward.y = 0;
                 float s = saturate(dot(-lightDir, forward) + _AngleAmp);
@@ -199,31 +212,48 @@ Shader"Moonflow/CelBase"
                 return ld;
             }
 
+            float3 ColorCurveMapping(float3 color, float k)
+            {
+	            return exp(log(max(color, int3(0, 0, 0))) * k);
+            }
+            float StrandSpecular(float3 T, float3 V, float3 L, float exponent)
+            {
+                float3 H = normalize(L + V);
+                float dotTH = dot(T, H);
+                float sinTH = sqrt(1.0 - dotTH * dotTH);
+                sinTH =  ColorCurveMapping(sinTH, exponent);
+                float dirAtten = smoothstep(-1, 0, saturate(dotTH+1));
+                return saturate(dirAtten * sinTH);
+            }
 
-            // float3 HairLighting (float3 tangent, float3 normal, float3 lightVec, 
-            //          float3 viewVec, float2 uv, float smoothness, float shiftTex)
-            // {
-            //     float3 bitangent = -normalize(cross(tangent, normal));
-            //     // shift tangents
-            //     shiftTex *= _SpecMaskOffset;
-            //     float3 t1 = ShiftTangent(bitangent, normal, /*primaryShift*/_Shift + shiftTex);
-            //     float3 t2 = ShiftTangent(bitangent, normal, /*secondaryShift*/_Shift + shiftTex) ;
-            //
-            //     // diffuse lighting
-            //     smoothness = saturate(smoothness - 0.3);
-            //     // specular lighting
-            //     // add second specular term
-            //     float3 specular = _SpecColor1 * StrandSpecular(t1, viewVec, lightVec, 0.1/_Layer1Offset) * _Layer1Intensity;
-            //     specular += _SpecColor2 * StrandSpecular(t2, viewVec, lightVec, 0.1/_Layer2Offset) * _Layer2Intensity;
-            //     
-            //     // Final color
-            //     // float3 o;
-            //     // o.rgb = (diffuse + specular) * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv); /** lightColor*/;
-            //     // o.rgb *= ambOcc; 
-            //     // o.a = tex2D(tAlpha, uv);
-            //
-            //     return specular;
-            // }
+            #define _SpecMaskOffset _HairData.x
+            #define _Shift _HairData.y
+            #define _Layer1Offset _HairData.z
+            #define _Layer2Offset _HairData.w
+            float3 HairLighting (float3 tangent, float3 normal, float3 lightVec, 
+                     float3 viewVec, float2 uv, float smoothness, float shiftTex)
+            {
+                float3 bitangent = -normalize(cross(tangent, normal));
+                // shift tangents
+                shiftTex *= _SpecMaskOffset;
+                float3 t1 = ShiftTangent(bitangent, normal, /*primaryShift*/_Shift + shiftTex);
+                float3 t2 = ShiftTangent(bitangent, normal, /*secondaryShift*/_Shift + shiftTex) ;
+            
+                // diffuse lighting
+                smoothness = saturate(smoothness - 0.3);
+                // specular lighting
+                // add second specular term
+                float3 specular = _SpecColor1 * StrandSpecular(t1, viewVec, lightVec, 0.1/_Layer1Offset);
+                specular += _SpecColor2 * StrandSpecular(t2, viewVec, lightVec, 0.1/_Layer2Offset);
+                
+                // Final color
+                // float3 o;
+                // o.rgb = (diffuse + specular) * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv); /** lightColor*/;
+                // o.rgb *= ambOcc; 
+                // o.a = tex2D(tAlpha, uv);
+            
+                return specular;
+            }
 
             void MFCelRampLight(BaseVarying i, MFMatData matData, MFLightData lightData, out float3 diffuse, out float3 specular, out float3 GI)
             {
@@ -234,12 +264,12 @@ Shader"Moonflow/CelBase"
                 diffuse = StockingDiffuse(diffuse, i.uv, matData, lightData);
                 #endif
 
-                // #ifdef _MFCEL_HAIR
+                #ifdef _MFCEL_HAIR
                 float shiftTex = SAMPLE_TEXTURE2D(_MaskTex, sampler_MaskTex, i.uv * _MaskTex_ST.xy + _MaskTex_ST.zw);
-                // float3 hairSpecColor = HairLighting(normalize(i.tangentWS), normalize(i.normalWS), normalize(lightData.lightDir), normalize(matData.viewDirWS), i.uv.xy, 1 - matData.roughness, shiftTex);
-                // #else
+                specular = HairLighting(normalize(i.tangentWS), normalize(i.normalWS), normalize(lightData.lightDir), normalize(matData.viewDirWS), i.uv.xy, 1 - matData.roughness, shiftTex);
+                #else
                 specular = GetSpecular(i.normalWS, matData, lightData);
-                // #endif
+                #endif
                 GI = SAMPLE_GI(i.lightmapUV, i.vertexSH, i.normalWS);
             }
 
@@ -289,9 +319,7 @@ Shader"Moonflow/CelBase"
                 float4 normalTex = SAMPLE_TEXTURE2D(_NormalTex, sampler_NormalTex, realUV);
                 float4 pbsTex = SAMPLE_TEXTURE2D(_PBSTex, sampler_PBSTex, realUV);
                 MFMatData matData = GetMatData(i, diffuseTex.rgb * _BaseColor, diffuseTex.a, normalTex.rg, pbsTex.r, pbsTex.g, pbsTex.b, normalTex.b);
-                
                 MFLightData ld = GetLightingData(i, matData);
-                
                 ld = EditLightingData(ld, i.uv);
                 
                 float3 diffuse;
