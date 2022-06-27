@@ -40,6 +40,12 @@ Shader"Moonflow/CelBase"
         [MFKeywordRely(_MFCEL_HLIGHT_DEPTH, _MFCEL_HLIGHT_DOUBLESIDEDEPTH)]
         _DepthThreshold("Depth Threshold", Range(0.001,0.25)) = 1
         
+        [MFKeywordRely(_MFCEL_HLIGHT_DEPTH, _MFCEL_HLIGHT_DOUBLESIDEDEPTH)]
+        _PerspectiveCorrection("Perspective Correction", Range(0,1)) = 0
+        
+        [MFKeywordRely(_MFCEL_HLIGHT_DEPTH, _MFCEL_HLIGHT_DOUBLESIDEDEPTH)]
+        _PerspectiveDistance("Perspective Distance", Float) = 30
+        
         /*======= Defination =======*/
         [Space(10)]
         [MFModuleDefinition(_MFCEL_STOCKING)]_Stocking("Stocking", Float) = 0
@@ -112,37 +118,41 @@ Shader"Moonflow/CelBase"
             Texture2D _CameraDepthTexture;
             SamplerState sampler_CameraDepthTexture;
 
-            UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
-                UNITY_DEFINE_INSTANCED_PROP(float4, _BaseTex_ST)
-                UNITY_DEFINE_INSTANCED_PROP(float4, _BaseColor)
+            CBUFFER_START(UnityPerMaterial)
+                float4 _BaseTex_ST;
+                float4 _BaseColor;
             
-                UNITY_DEFINE_INSTANCED_PROP(float, _SelfShadowStr)
-                UNITY_DEFINE_INSTANCED_PROP(float, _LitEdgeBandWidth)
-                UNITY_DEFINE_INSTANCED_PROP(float, _LitIndirectAtten)
-                UNITY_DEFINE_INSTANCED_PROP(float, _EnvironmentEffect)
+                float _SelfShadowStr;
+                float _LitEdgeBandWidth;
+                float _LitIndirectAtten;
+                float _EnvironmentEffect;
             
-                // UNITY_DEFINE_INSTANCED_PROP(float4, _RimColor)
-                // UNITY_DEFINE_INSTANCED_PROP(float, _RimFalloff)
-                // UNITY_DEFINE_INSTANCED_PROP(float4, _HighLightColor)
-                // UNITY_DEFINE_INSTANCED_PROP(float, _HighLightFalloff)
-                // UNITY_DEFINE_INSTANCED_PROP(float, _SampleOffset)
-                // UNITY_DEFINE_INSTANCED_PROP(float, _DepthThreshold)
-                //
-                // UNITY_DEFINE_INSTANCED_PROP(float4, _MaskTex_ST)
-                //
-                // UNITY_DEFINE_INSTANCED_PROP(float, _AngleAmp)
-                // UNITY_DEFINE_INSTANCED_PROP(float, _FaceShadowBandwidth)
-                //
-                // UNITY_DEFINE_INSTANCED_PROP(float, _NormalStr)
-                // UNITY_DEFINE_INSTANCED_PROP(float, _FresnelRatio)
-                // UNITY_DEFINE_INSTANCED_PROP(float, _FresnelStart)
-                // UNITY_DEFINE_INSTANCED_PROP(float3, _StockingColor)
-
-                UNITY_DEFINE_INSTANCED_PROP(float4, _SpecColor1)
-                UNITY_DEFINE_INSTANCED_PROP(float4, _SpecColor2)
-                UNITY_DEFINE_INSTANCED_PROP(float4, _HairData)
-            
-            UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
+                float4 _RimColor;
+                float _RimFalloff;
+                float4 _HighLightColor;
+                float _HighLightFalloff;
+                float _SampleOffset;
+                float _DepthThreshold;
+                float _PerspectiveCorrection;
+                float _PerspectiveDistance;
+                
+                float4 _MaskTex_ST;
+            // #ifdef _MFCEL_FACESDF
+                float _AngleAmp;
+                float _FaceShadowBandwidth;
+            // #endif
+            // #ifdef _MFCEL_STOCKING
+                float _NormalStr;
+                float _FresnelRatio;
+                float _FresnelStart;
+                float4 _StockingColor;
+            // #endif
+            // #ifdef _MFCEL_HAIR
+                float4 _SpecColor1;
+                float4 _SpecColor2;
+                float4 _HairData;
+            // #endif
+            CBUFFER_END
 
             // #ifdef _MFCEL_SKIN
             // #define _SDFTex _MaskTex
@@ -158,18 +168,28 @@ Shader"Moonflow/CelBase"
             #define _Layer1Offset _HairData.z
             #define _Layer2Offset _HairData.w
 
+            float StrandSpecular(float3 T, float3 V, float3 L, float exponent)
+            {
+                float3 H = normalize(L + V);
+                float dotTH = dot(T, H);
+                float sinTH = sqrt(1.0 - dotTH * dotTH);
+                sinTH =  ColorCurveMapping(sinTH, exponent);
+                float dirAtten = smoothstep(-1, 0, saturate(dotTH+1));
+                return saturate(dirAtten * sinTH);
+            }
+
             MFLightData EditLightingData(MFLightData ld, float2 uv)
             {
                 ld.shadowAtten = ld.shadowAtten * _SelfShadowStr + 1 - _SelfShadowStr;
                 #ifdef _MFCEL_FACESDF
-                ld.lightAtten = SDFFace(ld.lightDir, -unity_ObjectToWorld._m20_m21_m22, uv);
+                ld.lightAtten = SDFFace(ld.lightDir, -unity_ObjectToWorld._m20_m21_m22, uv, _AngleAmp, _FaceShadowBandwidth);
                 #endif
                 ld.lightAtten = ld.lightAtten / _LitEdgeBandWidth + _LitEdgeBandWidth;
                 ld.lightAtten = smoothstep(0,1,ld.lightAtten);
                 ld.lightAtten = lerp(0, ld.lightAtten, _LitIndirectAtten);
                 return ld;
             }
-            
+        #ifdef _MFCEL_HAIR
             float3 HairLighting (float3 tangent, float3 normal, float3 lightVec, 
                      float3 viewVec, float2 uv, float smoothness, float shiftTex)
             {
@@ -193,14 +213,23 @@ Shader"Moonflow/CelBase"
             
                 return specular;
             }
-
+        #endif
+            
             void MFCelRampLight(BaseVarying i, MFMatData matData, MFLightData lightData, out float3 diffuse, out float3 specular, out float3 GI)
             {
                 float shadow = CelShadow(i.posWS, i.normalWS, lightData.lightDir, lightData.shadowAtten);
 
                 diffuse = matData.diffuse;
                 #ifdef _MFCEL_STOCKING
-                diffuse = StockingDiffuse(diffuse, i.uv, matData, lightData);
+                MFStockingAttribute mfsa;
+                mfsa.tilling = _MaskTex_ST;
+                mfsa.normalStr = _NormalStr;
+                mfsa.falloff = _RimFalloff;
+                mfsa.fStart = _FresnelStart;
+                mfsa.fRatio = _FresnelRatio;
+                mfsa.color = _StockingColor;
+                mfsa.rimColor = _RimColor;
+                diffuse = StockingDiffuse(diffuse, i.uv, matData, lightData, mfsa);
                 #endif
 
                 #ifdef _MFCEL_HAIR
@@ -241,16 +270,21 @@ Shader"Moonflow/CelBase"
                 float4 clipPos = TransformWorldToHClip(i.posWS);
                 float4 screenPos = ComputeScreenPos(clipPos);
                 screenPos.xy /= screenPos.w;
-                float2 screenDepth = 0;
-                screenDepth.x = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy + half2(_SampleOffset * 0.01, 0)), _ZBufferParams);
-                screenDepth.y = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy - half2(_SampleOffset * 0.01, 0)), _ZBufferParams);
+                float4 screenDepth = 0;
+                float fade = saturate(1 - screenPos.w / _PerspectiveDistance);
+                float offset = _SampleOffset * lerp(1, fade, _PerspectiveCorrection);
+                screenDepth.x = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy + half2(offset * 0.01, 0)), _ZBufferParams);
+                screenDepth.z = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy + half2(offset * 0.02, 0)), _ZBufferParams);
+                screenDepth.y = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy - half2(offset * 0.01, 0)), _ZBufferParams);
+                screenDepth.w = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy - half2(offset * 0.02, 0)), _ZBufferParams);
                 float selfDepth = screenPos.w;
-                float2 depthDelta = saturate(screenDepth - selfDepth)> _DepthThreshold;
+                float4 depthDelta = saturate(screenDepth - selfDepth)> _DepthThreshold;
                 float VdL = dot(-viewDir, -lightDir);
-                depthDelta.x *= VdL * 0.45 + 0.55;
-                depthDelta.y *= (- VdL) * 0.45 + 0.55;
-                float delta = max(depthDelta.x, depthDelta.y);
-                color = lerp(color, delta * _HighLightColor.rgb, delta * _HighLightColor.a);
+                depthDelta.xz *= VdL * 0.45 + 0.55;
+                depthDelta.yw *= (- VdL) * 0.45 + 0.55;
+                float2 delta = max(depthDelta.xz, depthDelta.yw);
+                float avg = (delta.x + delta.y) * 0.5;
+                color = lerp(color, avg * _HighLightColor.rgb, avg * _HighLightColor.a * fade);
             }
             half4 frag (BaseVarying i) : SV_Target
             {
