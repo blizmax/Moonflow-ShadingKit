@@ -40,12 +40,6 @@ Shader"Moonflow/CelBase"
         [MFKeywordRely(_MFCEL_HLIGHT_DEPTH, _MFCEL_HLIGHT_DOUBLESIDEDEPTH)]
         _DepthThreshold("Depth Threshold", Range(0.001,0.25)) = 1
         
-        [MFKeywordRely(_MFCEL_HLIGHT_DEPTH, _MFCEL_HLIGHT_DOUBLESIDEDEPTH)]
-        _PerspectiveCorrection("Perspective Correction", Range(0,1)) = 0
-        
-        [MFKeywordRely(_MFCEL_HLIGHT_DEPTH, _MFCEL_HLIGHT_DOUBLESIDEDEPTH)]
-        _PerspectiveDistance("Perspective Distance", Float) = 30
-        
         /*======= Defination =======*/
         [Space(10)]
         [MFModuleDefinition(_MFCEL_STOCKING)]_Stocking("Stocking", Float) = 0
@@ -118,50 +112,42 @@ Shader"Moonflow/CelBase"
             Texture2D _CameraDepthTexture;
             SamplerState sampler_CameraDepthTexture;
 
+            float _PerspectiveCorrection;
+            float _RimFadeDistance;
             CBUFFER_START(UnityPerMaterial)
-                float4 _BaseTex_ST;
-                float4 _BaseColor;
+            float4 _BaseTex_ST;
+            float4 _BaseColor;
+        
+            float _SelfShadowStr;
+            float _LitEdgeBandWidth;
+            float _LitIndirectAtten;
+            float _EnvironmentEffect;
+        
+            float4 _RimColor;
+            float _RimFalloff;
+            float4 _HighLightColor;
+            float _HighLightFalloff;
+            float _SampleOffset;
+            float _DepthThreshold;
             
-                float _SelfShadowStr;
-                float _LitEdgeBandWidth;
-                float _LitIndirectAtten;
-                float _EnvironmentEffect;
-            
-                float4 _RimColor;
-                float _RimFalloff;
-                float4 _HighLightColor;
-                float _HighLightFalloff;
-                float _SampleOffset;
-                float _DepthThreshold;
-                float _PerspectiveCorrection;
-                float _PerspectiveDistance;
-                
-                float4 _MaskTex_ST;
-            // #ifdef _MFCEL_FACESDF
-                float _AngleAmp;
-                float _FaceShadowBandwidth;
-            // #endif
-            // #ifdef _MFCEL_STOCKING
-                float _NormalStr;
-                float _FresnelRatio;
-                float _FresnelStart;
-                float4 _StockingColor;
-            // #endif
-            // #ifdef _MFCEL_HAIR
-                float4 _SpecColor1;
-                float4 _SpecColor2;
-                float4 _HairData;
-            // #endif
+            float4 _MaskTex_ST;
+        // #ifdef _MFCEL_FACESDF
+            float _AngleAmp;
+            float _FaceShadowBandwidth;
+        // #endif
+        // #ifdef _MFCEL_STOCKING
+            float _NormalStr;
+            float _FresnelRatio;
+            float _FresnelStart;
+            float4 _StockingColor;
+        // #endif
+        // #ifdef _MFCEL_HAIR
+            float4 _SpecColor1;
+            float4 _SpecColor2;
+            float4 _HairData;
+        // #endif
             CBUFFER_END
 
-            // #ifdef _MFCEL_SKIN
-            // #define _SDFTex _MaskTex
-            // #define sampler_SDFTex sampler_MaskTex
-            // #elif _MFCEL_FACESDF
-            // #define _WeaveTex _MaskTex
-            // #define sampler_WeaveTex sampler_MaskTex
-            // #define _WeaveTex_ST _MaskTex_ST
-            // #endif
 
             #define _SpecMaskOffset _HairData.x
             #define _Shift _HairData.y
@@ -271,7 +257,7 @@ Shader"Moonflow/CelBase"
                 float4 screenPos = ComputeScreenPos(clipPos);
                 screenPos.xy /= screenPos.w;
                 float4 screenDepth = 0;
-                float fade = saturate(1 - screenPos.w / _PerspectiveDistance);
+                float fade = saturate(1 - screenPos.w / _RimFadeDistance);
                 float offset = _SampleOffset * lerp(1, fade, _PerspectiveCorrection);
                 screenDepth.x = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy + half2(offset * 0.01, 0)), _ZBufferParams);
                 screenDepth.z = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy + half2(offset * 0.02, 0)), _ZBufferParams);
