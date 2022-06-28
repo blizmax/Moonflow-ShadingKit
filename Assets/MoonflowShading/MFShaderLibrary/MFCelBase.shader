@@ -256,19 +256,19 @@ Shader"Moonflow/CelBase"
                 float4 clipPos = TransformWorldToHClip(i.posWS);
                 float4 screenPos = ComputeScreenPos(clipPos);
                 screenPos.xy /= screenPos.w;
-                float4 screenDepth = 0;
+                float2 screenDepth = 0;
                 float fade = saturate(1 - screenPos.w / _RimFadeDistance);
                 float offset = _SampleOffset * lerp(1, fade, _PerspectiveCorrection);
                 screenDepth.x = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy + half2(offset * 0.01, 0)), _ZBufferParams);
-                screenDepth.z = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy + half2(offset * 0.02, 0)), _ZBufferParams);
+                // screenDepth.z = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy + half2(offset * 0.02, 0)), _ZBufferParams);
                 screenDepth.y = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy - half2(offset * 0.01, 0)), _ZBufferParams);
-                screenDepth.w = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy - half2(offset * 0.02, 0)), _ZBufferParams);
+                // screenDepth.w = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy - half2(offset * 0.02, 0)), _ZBufferParams);
                 float selfDepth = screenPos.w;
-                float4 depthDelta = saturate(screenDepth - selfDepth)> _DepthThreshold;
+                float2 depthDelta = linearstep(clamp(screenDepth - selfDepth, 0, _DepthThreshold), 0, _DepthThreshold);
                 float VdL = dot(-viewDir, -lightDir);
-                depthDelta.xz *= VdL * 0.45 + 0.55;
-                depthDelta.yw *= (- VdL) * 0.45 + 0.55;
-                float2 delta = max(depthDelta.xz, depthDelta.yw);
+                depthDelta.x *= VdL * 0.45 + 0.55;
+                depthDelta.y *= (- VdL) * 0.45 + 0.55;
+                float2 delta = max(depthDelta.x, depthDelta.y);
                 float avg = (delta.x + delta.y) * 0.5;
                 color = lerp(color, avg * _HighLightColor.rgb, avg * _HighLightColor.a * fade);
             }

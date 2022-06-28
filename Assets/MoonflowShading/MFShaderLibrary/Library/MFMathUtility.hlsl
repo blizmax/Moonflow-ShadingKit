@@ -20,4 +20,24 @@ float3 ColorCurveMapping(float3 color, float k)
 {
     return exp(log(max(color, int3(0, 0, 0))) * k);
 }
+
+float linearstep(float data, float min, float max)
+{
+    return (data - min) / (max - min);
+}
+
+float2 linearstep(float2 data, float min, float max)
+{
+    return (data.xy - min.xx) / (max.xx - min.xx);
+}
+
+float3 linearstep(float3 data, float min, float max)
+{
+    return (data.xyz - min.xxx) / (max.xxx - min.xxx);
+}
+
+float4 linearstep(float4 data, float min, float max)
+{
+    return (data.xyzw - min.xxxx) / (max.xxxx - min.xxxx);
+}
 #endif

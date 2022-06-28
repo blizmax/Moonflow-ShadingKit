@@ -1,6 +1,6 @@
 #ifndef MF_CEL_SKIN_FUNC_INCLUDED
 #define MF_CEL_SKIN_FUNC_INCLUDED
-
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 #include "MFMathUtility.hlsl"
 
 Texture2D _MaskTex;
