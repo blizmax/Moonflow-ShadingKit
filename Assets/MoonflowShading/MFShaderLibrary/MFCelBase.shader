@@ -10,6 +10,7 @@ Shader"Moonflow/CelBase"
         [MFPublicTex]_DiffuseTex ("Diffuse Tex", 2D) = "white" {}
         [MFPublicTex]_NormalTex("Normal Tex", 2D) = "bump" {}
         [MFPublicTex]_PBSTex("Data Tex", 2D) = "black" {}
+        [MFRamp]_RampTex("Ramp Tex", 2D) = "white"{}
         _BaseTex_ST("TileOffset", Vector) = (1,1,0,0)
         
         _SelfShadowStr("Self Shadow Str", Range(0,1)) = 0.75
@@ -110,6 +111,9 @@ Shader"Moonflow/CelBase"
             Texture2D _PBSTex;
             SamplerState sampler_PBSTex;
 
+            Texture2D _RampTex;
+            SamplerState sampler_RampTex;
+
             Texture2D _CameraDepthTexture;
             SamplerState sampler_CameraDepthTexture;
 
@@ -157,15 +161,15 @@ Shader"Moonflow/CelBase"
 
 
 
-            MFLightData EditLightingData(MFLightData ld, float2 uv)
+            MFLightData EditLightingData(MFLightData ld, float2 uv, out float editLightAtten)
             {
                 ld.shadowAtten = ld.shadowAtten * _SelfShadowStr + 1 - _SelfShadowStr;
                 #ifdef _MFCEL_FACESDF
                 ld.lightAtten = SDFFace(ld.lightDir, -unity_ObjectToWorld._m20_m21_m22, uv, _AngleAmp, _FaceShadowBandwidth);
                 #endif
-                ld.lightAtten = ld.lightAtten / _LitEdgeBandWidth + _LitEdgeBandWidth;
-                ld.lightAtten = smoothstep(0,1,ld.lightAtten);
-                ld.lightAtten = lerp(0, ld.lightAtten, _LitIndirectAtten);
+                editLightAtten = ld.lightAtten / _LitEdgeBandWidth + _LitEdgeBandWidth;
+                editLightAtten = smoothstep(0,1,editLightAtten);
+                editLightAtten = lerp(0, editLightAtten, _LitIndirectAtten);
                 return ld;
             }
             
@@ -251,7 +255,8 @@ Shader"Moonflow/CelBase"
                 float4 pbsTex = SAMPLE_TEXTURE2D(_PBSTex, sampler_PBSTex, realUV);
                 MFMatData matData = GetMatData(i, diffuseTex.rgb * _BaseColor, diffuseTex.a, normalTex.rg, pbsTex.r, pbsTex.g, pbsTex.b, normalTex.b);
                 MFLightData ld = GetLightingData(i, matData);
-                ld = EditLightingData(ld, i.uv);
+                float editAtten;
+                ld = EditLightingData(ld, i.uv, editAtten);
                 
                 float3 diffuse;
                 float3 specular;
@@ -262,8 +267,7 @@ Shader"Moonflow/CelBase"
                 
                 Rim(color, matData, ld);
                 
-                color.rgb += specular + diffuse * ld.lightAtten * ld.lightColor;
-                
+                color.rgb += specular + diffuse * ld.lightAtten * ld.lightColor * SAMPLE_TEXTURE2D(_RampTex, sampler_RampTex, float2(ld.lightAtten, _LitEdgeBandWidth));
                 #ifdef _MFCEL_HLIGHT_FRESNEL
                 StaticLight(color.rgb, matData);
                 #elif _MFCEL_HLIGHT_DEPTH
