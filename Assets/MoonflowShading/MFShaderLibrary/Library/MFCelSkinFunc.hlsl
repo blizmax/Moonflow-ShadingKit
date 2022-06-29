@@ -6,44 +6,6 @@
 Texture2D _MaskTex;
 SamplerState sampler_MaskTex;
 
-
-// UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
-//
-//     UNITY_DEFINE_INSTANCED_PROP(float4, _RimColor)
-//     UNITY_DEFINE_INSTANCED_PROP(float, _RimFalloff)
-//     UNITY_DEFINE_INSTANCED_PROP(float4, _HighLightColor)
-//     UNITY_DEFINE_INSTANCED_PROP(float, _HighLightFalloff)
-//     UNITY_DEFINE_INSTANCED_PROP(float, _SampleOffset)
-//     UNITY_DEFINE_INSTANCED_PROP(float, _DepthThreshold)
-//
-//     UNITY_DEFINE_INSTANCED_PROP(float4, _MaskTex_ST)
-//
-//     UNITY_DEFINE_INSTANCED_PROP(float, _AngleAmp)
-//     UNITY_DEFINE_INSTANCED_PROP(float, _FaceShadowBandwidth)
-//
-//     UNITY_DEFINE_INSTANCED_PROP(float, _NormalStr)
-//     UNITY_DEFINE_INSTANCED_PROP(float, _FresnelRatio)
-//     UNITY_DEFINE_INSTANCED_PROP(float, _FresnelStart)
-//     UNITY_DEFINE_INSTANCED_PROP(float3, _StockingColor)
-// UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
-
-// CBUFFER_START(UnityPerMaterial)
-// float4 _RimColor;
-// float _RimFalloff;
-// float4 _HighLightColor;
-// float _HighLightFalloff;
-// float _SampleOffset;
-// float _DepthThreshold;
-// float4 _MaskTex_ST;
-// float _AngleAmp;
-// float _FaceShadowBandwidth;
-// float _NormalStr;
-// float _FresnelRatio;
-// float _FresnelStart;
-// float4 _StockingColor;
-// CBUFFER_END
-
-
 float SDFFace(float3 lightDir, float3 forward, float2 uv, half angleAmp, half bandWidth)
 {
     float LR = cross(forward, -lightDir).y;
@@ -58,7 +20,7 @@ float SDFFace(float3 lightDir, float3 forward, float2 uv, half angleAmp, half ba
     return saturate(smoothstep(1-lightMap - bandWidth , 1-lightMap + bandWidth, s ));
 }
 
-struct MFStockingAttribute
+struct MFStockingAttributes
 {
     float4 tilling;
     float normalStr;
@@ -86,7 +48,7 @@ half StockingAlpha(half weavingMask, half NdV, half fStart, half fRatio)
 }
 
 
-float3 StockingDiffuse(float3 baseColor, float2 uv, MFMatData matData, MFLightData lightData, MFStockingAttribute mfsa)
+float3 StockingDiffuse(float3 baseColor, float2 uv, MFMatData matData, MFLightData lightData, MFStockingAttributes mfsa)
 {
     half weaveMask = max(0, SAMPLE_TEXTURE2D(_MaskTex, sampler_MaskTex, uv * mfsa.tilling.xy + mfsa.tilling.zw) * mfsa.normalStr);
     half shade = lerp(0, lightData.NdL * 0.5 + 0.5, lightData.shadowAtten);

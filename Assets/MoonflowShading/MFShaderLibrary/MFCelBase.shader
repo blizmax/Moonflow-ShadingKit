@@ -91,8 +91,9 @@ Shader"Moonflow/CelBase"
             HLSLPROGRAM
             #include "Library/MFMathUtility.hlsl"
             #include "Library/MFBase.hlsl"
-            #include "Library/MFCelSkinFunc.hlsl"
             #include "Library/MFCelLighting.hlsl"
+            #include "Library/MFCelSkinFunc.hlsl"
+            #include "Library/MFCelHairFunc.hlsl"
             #pragma shader_feature _ _MFCEL_HAIR _MFCEL_FACESDF _MFCEL_STOCKING
             #pragma shader_feature _ _MFCEL_HLIGHT_FRESNEL _MFCEL_HLIGHT_DEPTH _MFCEL_HLIGHT_DOUBLESIDEDEPTH
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
@@ -154,15 +155,7 @@ Shader"Moonflow/CelBase"
             #define _Layer1Offset _HairData.z
             #define _Layer2Offset _HairData.w
 
-            float StrandSpecular(float3 T, float3 V, float3 L, float exponent)
-            {
-                float3 H = normalize(L + V);
-                float dotTH = dot(T, H);
-                float sinTH = sqrt(1.0 - dotTH * dotTH);
-                sinTH =  ColorCurveMapping(sinTH, exponent);
-                float dirAtten = smoothstep(-1, 0, saturate(dotTH+1));
-                return saturate(dirAtten * sinTH);
-            }
+
 
             MFLightData EditLightingData(MFLightData ld, float2 uv)
             {
@@ -175,31 +168,6 @@ Shader"Moonflow/CelBase"
                 ld.lightAtten = lerp(0, ld.lightAtten, _LitIndirectAtten);
                 return ld;
             }
-        #ifdef _MFCEL_HAIR
-            float3 HairLighting (float3 tangent, float3 normal, float3 lightVec, 
-                     float3 viewVec, float2 uv, float smoothness, float shiftTex)
-            {
-                float3 bitangent = -normalize(cross(tangent, normal));
-                // shift tangents
-                shiftTex *= _SpecMaskOffset;
-                float3 t1 = ShiftTangent(bitangent, normal, /*primaryShift*/_Shift + shiftTex);
-                // float3 t2 = ShiftTangent(bitangent, normal, /*secondaryShift*/_Shift + shiftTex) ;
-                // diffuse lighting
-                smoothness = saturate(smoothness - 0.3);
-                // specular lighting
-                // add second specular term
-                float3 specular = _SpecColor1.rgb * StrandSpecular(t1, viewVec, lightVec, 0.1/_Layer1Offset) * _SpecColor1.a;
-                specular += _SpecColor2.rgb * StrandSpecular(t1, viewVec, lightVec, 0.1/_Layer2Offset) * _SpecColor2.a;
-                
-                // Final color
-                // float3 o;
-                // o.rgb = (diffuse + specular) * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv); /** lightColor*/;
-                // o.rgb *= ambOcc; 
-                // o.a = tex2D(tAlpha, uv);
-            
-                return specular;
-            }
-        #endif
             
             void MFCelRampLight(BaseVarying i, MFMatData matData, MFLightData lightData, out float3 diffuse, out float3 specular, out float3 GI)
             {
@@ -207,7 +175,7 @@ Shader"Moonflow/CelBase"
 
                 diffuse = matData.diffuse;
                 #ifdef _MFCEL_STOCKING
-                MFStockingAttribute mfsa;
+                MFStockingAttributes mfsa;
                 mfsa.tilling = _MaskTex_ST;
                 mfsa.normalStr = _NormalStr;
                 mfsa.falloff = _RimFalloff;
@@ -219,9 +187,14 @@ Shader"Moonflow/CelBase"
                 #endif
 
                 #ifdef _MFCEL_HAIR
+                MFCelHairAttributes hairAttr;
+                hairAttr.specMaskOffset = _SpecMaskOffset;
+                hairAttr.shift = _Shift;
+                hairAttr.layerOffset = float2(_Layer1Offset, _Layer2Offset);
+                hairAttr.specColor1 = _SpecColor1;
+                hairAttr.specColor2 = _SpecColor2;
                 float shiftTex = SAMPLE_TEXTURE2D(_MaskTex, sampler_MaskTex, i.uv * _MaskTex_ST.xy + _MaskTex_ST.zw);
-                // specular = shiftTex.xxx;
-                specular = HairLighting(normalize(i.tangentWS), normalize(i.normalWS), normalize(lightData.lightDir), normalize(matData.viewDirWS), i.uv.xy, 1 - matData.roughness, shiftTex);
+                specular = HairLighting(hairAttr, normalize(i.tangentWS), normalize(i.normalWS), normalize(lightData.lightDir), normalize(matData.viewDirWS), i.uv.xy, 1 - matData.roughness, shiftTex);
                 #else
                 specular = GetSpecular(i.normalWS, matData, lightData);
                 #endif
@@ -260,9 +233,7 @@ Shader"Moonflow/CelBase"
                 float fade = saturate(1 - screenPos.w / _RimFadeDistance);
                 float offset = _SampleOffset * lerp(1, fade, _PerspectiveCorrection);
                 screenDepth.x = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy + half2(offset * 0.01, 0)), _ZBufferParams);
-                // screenDepth.z = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy + half2(offset * 0.02, 0)), _ZBufferParams);
                 screenDepth.y = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy - half2(offset * 0.01, 0)), _ZBufferParams);
-                // screenDepth.w = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, screenPos.xy - half2(offset * 0.02, 0)), _ZBufferParams);
                 float selfDepth = screenPos.w;
                 float2 depthDelta = linearstep(clamp(screenDepth - selfDepth, 0, _DepthThreshold), 0, _DepthThreshold);
                 float VdL = dot(-viewDir, -lightDir);
