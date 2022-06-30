@@ -10,20 +10,37 @@ namespace MoonflowShading.Editor
         private Material _mat;
         private string[] _keywords;
 
-        public MFRampDrawer(params string[] combinedtuples)
+        public MFRampDrawer()
         {
+        }
+        public MFRampDrawer(params string[] keywords)
+        {
+            _keywords = keywords;
         }
 
         public override void OnGUI(Rect position, MaterialProperty prop, GUIContent label, MaterialEditor editor)
         {
             _mat = editor.target as Material;
-            if (!_keywords.Any(t => _mat.IsKeywordEnabled(t))) return;
+            if (_keywords != null)
+            {
+                if(_keywords.Any(t => _mat.IsKeywordEnabled(t)))
+                    DrawGUI(prop, label, editor);
+            }
+            else
+            {
+                DrawGUI(prop, label, editor);
+            }
+        }
+
+        private void DrawGUI(MaterialProperty prop, GUIContent label, MaterialEditor editor)
+        {
             editor.TexturePropertySingleLine(label, prop);
             if (GUILayout.Button("Make"))
             {
                 MFRampMaker.ShowWindow(_mat, prop.name);
             }
         }
+
         public override float GetPropertyHeight(MaterialProperty prop, string label, MaterialEditor editor)
         {
             return 0f;

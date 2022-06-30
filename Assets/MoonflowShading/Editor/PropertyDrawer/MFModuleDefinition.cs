@@ -1,3 +1,4 @@
+using System;
 using UnityEditor;
 using UnityEditor.Rendering;
 using UnityEngine;
@@ -8,12 +9,14 @@ namespace MoonflowShading.Editor
     {
         private string _relyKeyword;
         private Material _mat;
-        private bool toggle;
-        private bool enabled;
+        private bool _toggle;
+        private bool _enabled;
+        private bool _createMode;
 
-        public MFModuleDefinition(string keyword)
+        public MFModuleDefinition(string keyword, string create)
         {
             _relyKeyword = keyword;
+            _createMode = Convert.ToBoolean(create);
         }
         public MFModuleDefinition()
         {
@@ -26,28 +29,41 @@ namespace MoonflowShading.Editor
             _mat = editor.target as Material;
             if (_mat != null)
             {
-                if (!string.IsNullOrEmpty(_relyKeyword))
+                if (_createMode)
                 {
-                    enabled = _mat.IsKeywordEnabled(_relyKeyword);
-                    _mat.SetFloat(prop.name, enabled ? 1 : 0);
-                    if (enabled)
+                    _enabled = true;
+                    EditorGUI.BeginChangeCheck();
+                    EditorGUI.showMixedValue = prop.hasMixedValue;
+                    _toggle = prop.floatValue == 1f;
+                    _toggle = EditorGUI.ToggleLeft(MFShaderGUIUtility.GetRect(prop), prop.displayName, _toggle, MFShaderGUIConfig.GetInstance().ModuleTitle);
+                    EditorGUI.showMixedValue = false;
+                    if (EditorGUI.EndChangeCheck())
                     {
-                        EditorGUI.LabelField(MFShaderGUIUtility.GetRect(prop), "▣ "+prop.displayName, MFShaderGUIConfig.GetInstance().ModuleTitle);
+                        prop.floatValue = _toggle ? 1f : 0f;
+                        if (_toggle)
+                        {
+                            _mat.EnableKeyword(_relyKeyword);
+                        }
+                        else
+                        {
+                            _mat.DisableKeyword(_relyKeyword);
+                        }
                     }
                 }
                 else
                 {
-                    enabled = true;
-                    EditorGUI.BeginChangeCheck();
-                    EditorGUI.showMixedValue = prop.hasMixedValue;
-                    toggle = prop.floatValue == 1f;
-                    toggle = EditorGUI.ToggleLeft(MFShaderGUIUtility.GetRect(prop), prop.displayName, toggle, MFShaderGUIConfig.GetInstance().ModuleTitle);
-                    EditorGUI.showMixedValue = false;
-                    if (EditorGUI.EndChangeCheck())
+                    if (!string.IsNullOrEmpty(_relyKeyword))
                     {
-                        prop.floatValue = toggle ? 1f : 0f;
+                        _enabled = _mat.IsKeywordEnabled(_relyKeyword);
+                        _mat.SetFloat(prop.name, _enabled ? 1 : 0);
+                        if (_enabled)
+                        {
+                            EditorGUI.LabelField(MFShaderGUIUtility.GetRect(prop), "▣ "+prop.displayName, MFShaderGUIConfig.GetInstance().ModuleTitle);
+                        }
                     }
                 }
+                
+               
                 
             }
         }
