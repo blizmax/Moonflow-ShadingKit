@@ -10,13 +10,16 @@ Shader"Moonflow/CelBase"
         [MFPublicTex]_DiffuseTex ("Diffuse Tex", 2D) = "white" {}
         [MFPublicTex]_NormalTex("Normal Tex", 2D) = "bump" {}
         [MFPublicTex]_PBSTex("Data Tex", 2D) = "black" {}
-        [MFRamp]_RampTex("Ramp Tex", 2D) = "white"{}
         _BaseTex_ST("TileOffset", Vector) = (1,1,0,0)
         
         _SelfShadowStr("Self Shadow Str", Range(0,1)) = 0.75
         _LitEdgeBandWidth("Lit Edge BandWidth", Range(0.001,1))=0.15
         _LitIndirectAtten("Lit Indirect Atten",Range(0,1)) = 0.5
         _EnvironmentEffect("EnvironmentEffect", Range(0,1)) = .2
+        
+        /*======= Ramp ======*/
+        [MFModuleDefinition]_MFCel_RampTex("Ramp", Float) = 0
+        [MFRamp(_MFCEL_RAMPTEX_ON)]_RampTex("Ramp Tex", 2D) = "white"{}
         
         /*======= Rim =======*/
         [Space(10)]
@@ -95,6 +98,7 @@ Shader"Moonflow/CelBase"
             #include "Library/MFCelLighting.hlsl"
             #include "Library/MFCelSkinFunc.hlsl"
             #include "Library/MFCelHairFunc.hlsl"
+            #pragma shader_feature _ _MFCEL_RAMPTEX_ON
             #pragma shader_feature _ _MFCEL_HAIR _MFCEL_FACESDF _MFCEL_STOCKING
             #pragma shader_feature _ _MFCEL_HLIGHT_FRESNEL _MFCEL_HLIGHT_DEPTH _MFCEL_HLIGHT_DOUBLESIDEDEPTH
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
@@ -266,8 +270,12 @@ Shader"Moonflow/CelBase"
                 color.rgb = diffuse * lerp(1, GI, _EnvironmentEffect);
                 
                 Rim(color, matData, ld);
-                
+                #ifdef _MFCEL_RAMP_TEX
                 color.rgb += specular + diffuse * ld.lightAtten * ld.lightColor * SAMPLE_TEXTURE2D(_RampTex, sampler_RampTex, float2(ld.lightAtten, _LitEdgeBandWidth));
+                #else
+                color.rgb += specular + diffuse * ld.lightAtten * ld.lightColor;
+                #endif
+
                 #ifdef _MFCEL_HLIGHT_FRESNEL
                 StaticLight(color.rgb, matData);
                 #elif _MFCEL_HLIGHT_DEPTH

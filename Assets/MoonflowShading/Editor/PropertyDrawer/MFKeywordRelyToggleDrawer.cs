@@ -17,12 +17,16 @@ namespace MoonflowShading.Editor
         public override void OnGUI(Rect position, MaterialProperty prop, string label, MaterialEditor editor)
         {
             _mat = editor.target as Material;
-            if (_mat != null && _mat.IsKeywordEnabled(_relyKeyword))
+            if (_mat != null)
             { 
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = prop.hasMixedValue;
                 toggle = prop.floatValue == 1f;
-                toggle = EditorGUI.Toggle(MFShaderGUIUtility.GetRect(prop), prop.displayName, toggle);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    toggle = EditorGUI.Toggle(MFShaderGUIUtility.GetRect(prop), prop.displayName, toggle);
+                    EditorGUI.LabelField(MFShaderGUIUtility.GetRect(prop), label, MFShaderGUIConfig.GetInstance().ModuleTitle);
+                }
                 EditorGUI.showMixedValue = false;
                 if (EditorGUI.EndChangeCheck())
                 {

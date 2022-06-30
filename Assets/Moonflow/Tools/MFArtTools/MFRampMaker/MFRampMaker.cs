@@ -13,13 +13,18 @@ namespace Moonflow
     {
         public static MFRampMaker Ins;
         public bool isShow = false;
-        public bool AutoLinkMode = false;
+        public bool autoLinkMode = false;
         public Material targetMaterial;
+        public string propertyName;
+
+        public bool lerpMode;
+        private bool _lerpMode;
+        public int ribbonNum;
         private List<string> texNames;
         private int targetPropertySerial;
-        public string propertyName;
-        private Gradient _top;
-        private Gradient _bottom;
+        private List<Gradient> _ribbons;
+        // private Gradient _top;
+        // private Gradient _bottom;
         private int _level;
         private int _size;
         private RenderTexture _rt;
@@ -29,11 +34,11 @@ namespace Moonflow
         private float[] _tempPoint;
         private Texture2D _previewTex;
         private bool _isLinked = false;
-        private static readonly int TOP_COLOR_ARRAY = Shader.PropertyToID("_TopColorArray");
-        private static readonly int TOP_POINT_ARRAY = Shader.PropertyToID("_TopPointArray");
-        private static readonly int BOTTOM_COLOR_ARRAY = Shader.PropertyToID("_BottomColorArray");
-        private static readonly int BOTTOM_POINT_ARRAY = Shader.PropertyToID("_BottomPointArray");
-        private static readonly int TARGET_RAMP = Shader.PropertyToID("_TargetRamp");
+
+        private static readonly int COLOR_ARRAY = Shader.PropertyToID("_ColorArray");
+        private static readonly int POINT_ARRAY = Shader.PropertyToID("_PointArray");
+        private static readonly int REAL_NUM = Shader.PropertyToID("_RealNum");
+        private static readonly string LERP_MODE = "_LERP_MODE";
 
         [MenuItem("Moonflow/Tools/Art/MFRampMaker")]
         public static void ShowWindow()
@@ -66,7 +71,7 @@ namespace Moonflow
                 Ins.Show();
             }
             Ins.targetMaterial = mat;
-            Ins.AutoLinkMode = true;
+            Ins.autoLinkMode = true;
             Ins.propertyName = propertyName;
             Ins._isLinked = true;
             Ins.UpdateProperty();
@@ -86,8 +91,30 @@ namespace Moonflow
                         EditorGUIUtility.labelWidth = 50;
                         EditorGUIUtility.fieldWidth = 50;
                         EditorGUILayout.PrefixLabel("参数");
-                        _top = EditorGUILayout.GradientField("上限", _top);
-                        _bottom = EditorGUILayout.GradientField("下限", _bottom);
+                        lerpMode = EditorGUILayout.ToggleLeft("渐变模式", lerpMode);
+                        if (_lerpMode != lerpMode)
+                        {
+                            _lerpMode = lerpMode;
+                            if (_lerpMode)
+                            {
+                                Shader.EnableKeyword(LERP_MODE);
+                            }
+                            else
+                            {
+                                Shader.DisableKeyword(LERP_MODE);
+                            }
+                        }
+
+                        ribbonNum = EditorGUILayout.IntSlider("条带数量", ribbonNum, 1, 8);
+                        if (_ribbons.Count != ribbonNum)
+                        {
+                            UpdateRibbonNum();
+                        }
+
+                        for (int i = 0; i < _ribbons.Count; i++)
+                        {
+                            _ribbons[i] = EditorGUILayout.GradientField((i + 1).ToString(), _ribbons[i]);
+                        }
                         if (GUILayout.Button("保存"))
                         {
                             string path = EditorUtility.SaveFilePanel("保存到", Application.dataPath, "RampTex", "TGA");
@@ -99,7 +126,7 @@ namespace Moonflow
                         if (targetMaterial != null)
                         {
                             EditorGUILayout.ObjectField(targetMaterial, typeof(Material));
-                            if (!AutoLinkMode)
+                            if (!autoLinkMode)
                             {
                                 targetPropertySerial = EditorGUILayout.Popup("目标属性", targetPropertySerial, texNames.ToArray());
                                 propertyName = texNames[targetPropertySerial];
@@ -110,7 +137,8 @@ namespace Moonflow
                             }
                             if (GUILayout.Button(_isLinked ? "断开链接" : "链接"))
                             {
-                                _isLinked = !_isLinked;
+                                if (_isLinked) DestroyLink();
+                                else _isLinked = true;
                             }
                         }
                     }
@@ -124,7 +152,6 @@ namespace Moonflow
 
                     if (_rt!=null && _rt.IsCreated())
                     {
-                        // _previewTex = AssetPreview.GetAssetPreview(_rt);
                         Rect rect = EditorGUILayout.GetControlRect(true, 200);
                         rect.width = 200;
                         EditorGUI.DrawPreviewTexture(rect, _rt);
@@ -142,7 +169,19 @@ namespace Moonflow
                 SetGradient();
             }
         }
-        
+
+        private void UpdateRibbonNum()
+        {
+            while (_ribbons.Count > ribbonNum)
+            {
+                _ribbons.RemoveAt(_ribbons.Count-1);
+            }
+
+            while (_ribbons.Count < ribbonNum)
+            {
+                _ribbons.Add(new Gradient());
+            }
+        }
         public void Save(string path)
         {
             RenderTexture.active = _rt;
@@ -188,11 +227,17 @@ namespace Moonflow
             targetMaterial.GetTexturePropertyNames(texNames);
         }
 
+        private void DestroyLink()
+        {
+            _isLinked = false;
+            if(!string.IsNullOrEmpty(propertyName))
+                targetMaterial.SetTexture(propertyName, Texture2D.whiteTexture);
+        }
         public void InitData()
         {
             isShow = true;
-            _top = new Gradient();
-            _bottom = new Gradient();
+            _ribbons = new List<Gradient>();
+            _ribbons.Add(new Gradient());
             texNames = new List<string>();
             // _cmd = new CommandBuffer();
             Shader s = Shader.Find("Hidden/Moonflow/RampMaker");
@@ -217,7 +262,7 @@ namespace Moonflow
             ReleaseOldRT();
             _size = (int)Mathf.Pow(2, 5 + _level);
             _rt = new RenderTexture(_size, _size, 0, RenderTextureFormat.Default, RenderTextureReadWrite.sRGB);
-            _rt.name = "test";
+            _rt.name = "preview";
             _rt.enableRandomWrite = true;
             _rt.Create();
         }
@@ -232,65 +277,52 @@ namespace Moonflow
 
         private void SetGradient()
         {
-            _tempColor = new Color[10];
-            _tempPoint = new float[10];
-            int count = _top.colorKeys.Length;
+            _tempColor = new Color[80];
+            _tempPoint = new float[80];
+            for (int i = 0; i < _ribbons.Count; i++)
+            {
+                SetGradientToArray(_ribbons[i], i);
+            }
+            _previewMat.SetFloat(REAL_NUM, _ribbons.Count);
+            _previewMat.SetColorArray(COLOR_ARRAY, _tempColor);
+            _previewMat.SetFloatArray(POINT_ARRAY, _tempPoint);
+        }
+
+        private void SetGradientToArray(Gradient source, int serial)
+        {
+            int count = source.colorKeys.Length;
             int offset = 0;
+            int outsideOffset = serial * 10;
             for (int i = 0; i < 10; i++)
             {
-                if (i == 0 && _top.colorKeys[0].time !=0)
+                if (i == 0 && source.colorKeys[0].time != 0)
                 {
-                    _tempColor[0] = _top.colorKeys[0].color;
-                    _tempPoint[0] = 0;
+                    _tempColor[outsideOffset] = source.colorKeys[0].color;
+                    _tempPoint[outsideOffset] = 0;
                     offset = -1;
                     continue;
                 }
+
                 if (i + offset < count)
                 {
-                    _tempColor[i] = _top.colorKeys[i + offset].color;
-                    _tempPoint[i] = _top.colorKeys[i + offset].time;
+                    _tempColor[outsideOffset + i] = source.colorKeys[i + offset].color;
+                    _tempPoint[outsideOffset + i] = source.colorKeys[i + offset].time;
                 }
                 else
                 {
-                    _tempColor[i] = _top.colorKeys[count-1].color;
-                    _tempPoint[i] = 1;
+                    _tempColor[outsideOffset + i] = source.colorKeys[count - 1].color;
+                    _tempPoint[outsideOffset + i] = 1;
                 }
             }
-            _previewMat.SetColorArray(TOP_COLOR_ARRAY, _tempColor);
-            _previewMat.SetFloatArray(TOP_POINT_ARRAY, _tempPoint);
-            
-            count = _bottom.colorKeys.Length;
-            offset = 0;
-            for (int i = 0; i < 10; i++)
-            {
-                if (i == 0 && _bottom.colorKeys[0].time !=0)
-                {
-                    _tempColor[0] = _bottom.colorKeys[0].color;
-                    _tempPoint[0] = 0;
-                    offset = -1;
-                    continue;
-                }
-                if (i + offset < count)
-                {
-                    _tempColor[i] = _bottom.colorKeys[i + offset].color;
-                    _tempPoint[i] = _bottom.colorKeys[i + offset].time;
-                }
-                else
-                {
-                    _tempColor[i] = _bottom.colorKeys[count-1].color;
-                    _tempPoint[i] = 1;
-                }
-            }
-            _previewMat.SetColorArray(BOTTOM_COLOR_ARRAY, _tempColor);
-            _previewMat.SetFloatArray(BOTTOM_POINT_ARRAY, _tempPoint);
+
         }
 
         private void OnDisable()
         {
+            DestroyLink();
             isShow = false;
             RenderTexture.active = null;
             _rt.Release();
-            // _cmd.Release();
             DestroyImmediate(_previewMat);
         }
     }
