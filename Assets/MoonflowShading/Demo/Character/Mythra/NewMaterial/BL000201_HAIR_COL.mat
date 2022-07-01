@@ -8,12 +8,14 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: BL000201_HAIR_COL
-  m_Shader: {fileID: 4800000, guid: 8c137effef4fa4e4e824cab656d2df75, type: 3}
+  m_Shader: {fileID: 4800000, guid: 3d9ad3dcc3604f7db3ea70e32ba7ebb1, type: 3}
   m_ValidKeywords:
   - _ALPHATEST_ON
-  - _UV2_ON
+  - _MFCEL_HAIR
   m_InvalidKeywords:
   - TINTED_OUTLINE
+  - _MFCEL_HLIGHT_NONE
+  - _UV2_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -43,17 +45,25 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _DiffuseTex:
+        m_Texture: {fileID: 2800000, guid: e11f8922ffd872042af10eff3e86fc4f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _EmissionMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _HighlightShiftTex:
         m_Texture: {fileID: 2800000, guid: 2dec52ac108b6f14a915ada796d13475, type: 3}
-        m_Scale: {x: 1, y: 1}
+        m_Scale: {x: 5, y: 5}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: e11f8922ffd872042af10eff3e86fc4f, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MaskTex:
+        m_Texture: {fileID: 2800000, guid: cd005d46db1a9604d85024c59b5fd273, type: 3}
+        m_Scale: {x: 10, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
         m_Texture: {fileID: 0}
@@ -67,47 +77,83 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _PBSTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _ParallaxMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _RampTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AngleAmp: 0
     - _BumpScale: 1
     - _CubeIntensity: 1
     - _Cutoff: 0.1
+    - _DepthThreshold: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
-    - _EnvironmentEffect: 0.2
+    - _EnvironmentEffect: 1
+    - _Face: 0
+    - _FaceShadowBandwidth: 0
+    - _FresnelRatio: 1
+    - _FresnelStart: 0.5
     - _GlossMapScale: 1
     - _Glossiness: 0
     - _GlossyReflections: 1
-    - _Layer1Intensity: 0
-    - _Layer1Offset: 0.071
-    - _Layer2Intensity: 0
-    - _Layer2Offset: 0.03
-    - _Metallic: 0.659
+    - _Hair: 1
+    - _HighLightFalloff: 2
+    - _Layer1Intensity: 0.41
+    - _Layer1Offset: 0.001
+    - _Layer2Intensity: 0.33
+    - _Layer2Offset: 0.004
+    - _LitEdgeBandWidth: 0.21
+    - _LitIndirectAtten: 0.5
+    - _MFCel: 1
+    - _MFCel_HLight: 0
+    - _MFCel_RampTex: 0
+    - _MFOutlineModelStrength: 0
+    - _Metallic: 1
     - _Mode: 1
     - _NormalStr: 1
     - _OcclusionStrength: 1
     - _OutlineMode: 1
     - _Parallax: 0.02
+    - _PerspectiveCorrection: 0
+    - _PerspectiveDistance: 30
+    - _RimFadeDistance: 30
+    - _RimFalloff: 10
+    - _SampleOffset: 1
+    - _SelfShadowStr: 0.75
     - _Shadow: 0.2
-    - _Shift: 0.59
+    - _Shift: 0.61
     - _SmoothnessTextureChannel: 0
-    - _SpecMaskOffset: 0.5
+    - _SpecMaskOffset: 1
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _StencilRef: 1
+    - _Stocking: 0
     - _UV2: 1
     - _UVSec: 0
     - _ZWrite: 1
     - _outline_tint: 0.5
     - _outline_width: 0
     m_Colors:
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _BaseTex_ST: {r: 1, g: 1, b: 0, a: 0}
+    - _Color: {r: 0, g: 0, b: 0, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _SpecColor1: {r: 1, g: 1, b: 1, a: 1}
-    - _SpecColor2: {r: 1, g: 1, b: 1, a: 1}
+    - _HairData: {r: 1, g: -0.79, b: 0.0001, a: 0.0001}
+    - _HighLightColor: {r: 0.7, g: 0.2, b: 0.17, a: 1}
+    - _RimColor: {r: 0.7, g: 0.2, b: 0.17, a: 0}
+    - _ShadowColor: {r: 1, g: 0.740566, b: 0.870283, a: 0}
+    - _SpecColor1: {r: 2.5926118, g: 1.4125264, b: 0, a: 0.69411767}
+    - _SpecColor2: {r: 3.482202, g: 3.3028357, b: 1.7575265, a: 0.70980394}
+    - _StockingColor: {r: 0, g: 0, b: 0, a: 1}
     - _outline_color: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []

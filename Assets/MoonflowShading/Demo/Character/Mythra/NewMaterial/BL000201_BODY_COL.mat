@@ -11,8 +11,10 @@ Material:
   m_Shader: {fileID: 4800000, guid: 3d9ad3dcc3604f7db3ea70e32ba7ebb1, type: 3}
   m_ValidKeywords:
   - _ALPHATEST_ON
+  - _MFCEL_HLIGHT_DOUBLESIDEDEPTH
   m_InvalidKeywords:
   - TINTED_OUTLINE
+  - _MFCEL_BASE
   - _NORMALMAP
   - _TYPE_SKIN
   m_LightmapFlags: 4
@@ -56,9 +58,17 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _FaceSDFTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 2800000, guid: 09d71a32c883fe54d96a0803e5a086c6, type: 3}
         m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MaskTex:
+        m_Texture: {fileID: 2800000, guid: cd005d46db1a9604d85024c59b5fd273, type: 3}
+        m_Scale: {x: 10, y: 10}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
         m_Texture: {fileID: 0}
@@ -80,6 +90,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _RampTex:
+        m_Texture: {fileID: 2800000, guid: 16960f0ca2903fc4db5bfeadab108374, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _RimMaskTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -90,30 +104,45 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AngleAmp: 0
     - _BandWidth: 0.1
     - _BumpScale: 1
     - _Cutoff: 0.1
+    - _DepthThreshold: 0.0459
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _EnvironmentEffect: 1
+    - _Face: 0
     - _FacePlane: 1
-    - _FresnelRatio: 1
-    - _FresnelStart: 0.5
+    - _FaceSDF: 0
+    - _FaceShadowBandwidth: 0
+    - _FresnelRatio: 0.177
+    - _FresnelStart: 0.961
     - _GlossMapScale: 1
     - _Glossiness: 0
     - _GlossyReflections: 1
-    - _HighLightFalloff: 51.89
+    - _Hair: 0
+    - _HighLightFalloff: 77.7
+    - _HighlightFalloff: 10
     - _LightIndirectAtten: 1
-    - _LitEdgeBandWidth: 0.176
-    - _LitIndirectAtten: 1
+    - _LitEdgeBandWidth: 0.364
+    - _LitIndirectAtten: 0.152
+    - _MFCel: 0
+    - _MFCel_HLight: 3
+    - _MFCel_RampTex: 0
     - _MFOutlineModelStrength: 0
+    - _MaskTex_Scale: 0
     - _Metallic: 0
     - _Mode: 1
-    - _NormalStr: 1.5
+    - _NormalStr: 0.18
     - _OcclusionStrength: 1
     - _OutlineMode: 1
     - _Parallax: 0.02
-    - _RimFalloff: 2
+    - _PerspectiveCorrection: 1
+    - _PerspectiveDistance: 10
+    - _RightSide: 0
+    - _RimFalloff: 3.08
+    - _SampleOffset: 0.271
     - _SelfShadowStr: 0
     - _Shadow: 0.2
     - _ShadowStr: 1
@@ -121,6 +150,8 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _StencilRef: 0
+    - _Stocking: 0
+    - _T: 1
     - _Type: 0
     - _UVSec: 0
     - _ZWrite: 1
@@ -132,8 +163,12 @@ Material:
     - _BaseTex_ST: {r: 1, g: 1, b: 0, a: 0}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _HighLightColor: {r: 1, g: 1, b: 1, a: 1}
-    - _RimColor: {r: 0.7, g: 0.2, b: 0.17, a: 1}
-    - _StockingColor: {r: 0, g: 0, b: 0, a: 1}
+    - _HairData: {r: 1, g: 1, b: 1, a: 1}
+    - _HighLightColor: {r: 1.2869291, g: 1.0269836, b: 0.7830842, a: 1}
+    - _RimColor: {r: 3.9533494, g: 1.4902679, b: 1.0763046, a: 1}
+    - _ShadowColor: {r: 0.9622642, g: 0.7126202, b: 0.8643996, a: 0.5}
+    - _SpecColor1: {r: 1, g: 1, b: 1, a: 1}
+    - _SpecColor2: {r: 1, g: 1, b: 1, a: 1}
+    - _StockingColor: {r: 0.01886791, g: 0.0029369863, b: 0.012959341, a: 1}
     - _outline_color: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []

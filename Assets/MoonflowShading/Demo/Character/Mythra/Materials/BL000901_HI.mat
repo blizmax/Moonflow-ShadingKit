@@ -11,9 +11,9 @@ Material:
   m_Shader: {fileID: 4800000, guid: 4d0da6b1bdf216e44991b11ee8bcc3ee, type: 3}
   m_ValidKeywords:
   - _ALPHATEST_ON
-  - _TYPE_FACE
   m_InvalidKeywords:
   - TINTED_OUTLINE
+  - _TYPE_SKIN
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -105,7 +105,7 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _StencilRef: 0
-    - _Type: 1
+    - _Type: 0
     - _UVSec: 0
     - _ZWrite: 1
     - _outline_tint: 0.5

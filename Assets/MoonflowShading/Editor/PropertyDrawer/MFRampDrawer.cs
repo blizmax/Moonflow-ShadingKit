@@ -34,11 +34,13 @@ namespace MoonflowShading.Editor
 
         private void DrawGUI(MaterialProperty prop, GUIContent label, MaterialEditor editor)
         {
+            EditorGUI.indentLevel++;
             editor.TexturePropertySingleLine(label, prop);
             if (GUILayout.Button("Make"))
             {
                 MFRampMaker.ShowWindow(_mat, prop.name);
             }
+            EditorGUI.indentLevel--;
         }
 
         public override float GetPropertyHeight(MaterialProperty prop, string label, MaterialEditor editor)

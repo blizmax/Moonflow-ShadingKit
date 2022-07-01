@@ -15,9 +15,10 @@ Shader"Moonflow/CelBase"
         [MFRamp(_MFCEL_RAMPTEX)]_RampTex("Ramp Tex", 2D) = "white"{}
         _BaseTex_ST("TileOffset", Vector) = (1,1,0,0)
         
-        _SelfShadowStr("Self Shadow Str", Range(0,1)) = 0.75
+//        _SelfShadowStr("Self Shadow Str", Range(0,1)) = 0.75
         _LitEdgeBandWidth("Lit Edge BandWidth", Range(0.001,1))=0.15
-        _LitIndirectAtten("Lit Indirect Atten",Range(0,1)) = 0.5
+        _ShadowColor("Shadow Color", Color) = (0,0,0,0.5)
+//        _LitIndirectAtten("Lit Indirect Atten",Range(0,1)) = 0.5
         _EnvironmentEffect("EnvironmentEffect", Range(0,1)) = .2
         
         /*======= Rim =======*/
@@ -56,8 +57,8 @@ Shader"Moonflow/CelBase"
         /*======= SDF Face =======*/
         [MFModuleElement(_Face)]
         _AngleAmp("AngleAmp", Range(-1,1)) = 0
-        [MFModuleElement(_Face)]
-        _FaceShadowBandwidth("Face Shadow BandWidth", Range(0,0.25)) = 0
+//        [MFModuleElement(_Face)]
+//        _FaceShadowBandwidth("Face Shadow BandWidth", Range(0,0.25)) = 0
         
         /*======= Stocking =======*/
         [MFModuleElement(_Stocking)]
@@ -125,10 +126,11 @@ Shader"Moonflow/CelBase"
             CBUFFER_START(UnityPerMaterial)
             float4 _BaseTex_ST;
             float4 _BaseColor;
-        
+
+            float4 _ShadowColor;
             float _SelfShadowStr;
             float _LitEdgeBandWidth;
-            float _LitIndirectAtten;
+            // float _LitIndirectAtten;
             float _EnvironmentEffect;
         
             float4 _RimColor;
@@ -168,11 +170,11 @@ Shader"Moonflow/CelBase"
             {
                 ld.shadowAtten = ld.shadowAtten * _SelfShadowStr + 1 - _SelfShadowStr;
                 #ifdef _MFCEL_FACESDF
-                ld.lightAtten = SDFFace(ld.lightDir, -unity_ObjectToWorld._m20_m21_m22, uv, _AngleAmp, _FaceShadowBandwidth);
+                ld.lightAtten = SDFFace(ld.lightDir, -unity_ObjectToWorld._m20_m21_m22, uv, _AngleAmp, _LitEdgeBandWidth);
                 #endif
-                editLightAtten = ld.lightAtten / _LitEdgeBandWidth + _LitEdgeBandWidth;
-                editLightAtten = smoothstep(0,1,editLightAtten);
-                editLightAtten = lerp(0, editLightAtten, _LitIndirectAtten);
+                editLightAtten = saturate(ld.lightAtten / _LitEdgeBandWidth + 0.5 * ( 1 - 1 / _LitEdgeBandWidth));
+                // editLightAtten = smoothstep(0,1,editLightAtten);
+                // editLightAtten = lerp(1, editLightAtten, _LitIndirectAtten);
                 return ld;
             }
             
@@ -211,7 +213,7 @@ Shader"Moonflow/CelBase"
             void Rim(inout float4 color, MFMatData matData, MFLightData lightData)
             {
                 half rim =saturate(pow(saturate(1-matData.ndv), _RimFalloff));
-                color.rgb = lerp(color.rgb, color.rgb * _RimColor, saturate(rim) * _RimColor.a * (1-lightData.lightAtten ));
+                color.rgb = lerp(color.rgb, color.rgb * _RimColor.rgb, saturate(rim) * _RimColor.a * (1-lightData.lightAtten ));
             }
             void StaticLight(inout float3 color, MFMatData matData)
             {
@@ -266,11 +268,19 @@ Shader"Moonflow/CelBase"
                 float3 GI;
                 MFCelRampLight(i, matData, ld, diffuse, specular, GI);  
                 float4 color = matData.alpha;
-                color.rgb = diffuse * lerp(1, GI, _EnvironmentEffect);
+                color.rgb = diffuse * lerp(_ShadowColor.a, GI, _EnvironmentEffect);
+                #ifdef _MFCEL_RAMPTEX
+                color.rgb *= lerp(_ShadowColor.rgb, 1, ld.lightAtten);
+                #else
+                color.rgb *= lerp(_ShadowColor.rgb, 1, editAtten);
+                #endif
                 
                 Rim(color, matData, ld);
-                
+            #ifdef _MFCEL_RAMPTEX
                 color.rgb += specular + diffuse * ld.lightAtten * ld.lightColor * SAMPLE_TEXTURE2D(_RampTex, sampler_RampTex, float2(ld.lightAtten, _LitEdgeBandWidth));
+            #else
+                color.rgb += specular + diffuse * editAtten * ld.lightColor;
+            #endif
                 #ifdef _MFCEL_HLIGHT_FRESNEL
                 StaticLight(color.rgb, matData);
                 #elif _MFCEL_HLIGHT_DEPTH
@@ -278,7 +288,6 @@ Shader"Moonflow/CelBase"
                 #elif _MFCEL_HLIGHT_DOUBLESIDEDEPTH
                 StaticLight(color.rgb, i, ld.lightDir, UNITY_MATRIX_V[0]);
                 #endif
-                
                 return color;
             }
             ENDHLSL

@@ -27,7 +27,7 @@ public class MFShaderGUI : ShaderGUI
     protected void DrawTitle(MaterialEditor materialEditor)
     {
         Material mat = materialEditor.target as Material;
-        EditorGUILayout.LabelField("▣ "+ materialEditor.target.name, MFShaderGUIConfig.GetInstance().ModuleTitle);
+        EditorGUILayout.LabelField("▣ "+ materialEditor.target.name, MFShaderGUIConfig.GetInstance().ShaderTitle);
     }
     private void MakeKeywordList(string[] keywordArr)
     {
