@@ -11,13 +11,20 @@ Shader"Test/GenshinCloud"
         _cb0_8("8",Color) = (0.01329, 0.04425, 0.18125, 0)
         _cb0_9("9",Color) = (0.0687, 0.24619, 0.45641, 0)
         _cb0_10("10",Color) = (0.04328, 0.29054, 0.6398, 0.50569)
-        _cb0_12("12",Vector) = (0.40979, 0.34851, 0.74134, 1)
-        _cb0_13("13",Vector) = (1.24741, 0, 0, 0)
-        _cb0_15("15",Vector) = (0.49728, -0.67019, 0.50162, 0.54701)
-        _cb0_16("16",Vector) = (1, 0.99262, 0.86738, 9.92669)
+        _unknownStr0("unknown Str 0", Float) = 0.40979
+        _unknownColor0("Unknown Color 0", Color) = (0.34851, 0.74134, 1, 1)
+        _unknownIntensity0("Unknown Intensity 0", Float) = 1.24741
+//        _cb0_12("12",Vector) = (0.40979, 0.34851, 0.74134, 1)
+//        _cb0_13("13",Vector) = (1.24741, 0, 0, 0)
+//        _cb0_15("15",Vector) = (0.49728, -0.67019, 0.50162, 0.54701)
+        _unknownStr1("Unknown Str 1", Float) = 0.49728
+        _unknownUnnormalizedDir0("Unknown Unnormalized Dir 0", Vector) = (-0.67019, 0.50162, 0.54701, 0)
+        _cb0_16("16",Color) = (1, 0.99262, 0.86738, 9.92669)
         _cb0_17("17",Vector) = (0, 0, 1, 999.37653)
         _cb0_18("18",Color) = (0.70543, 0.76732, 0.76504, 0.50917)
-        _cb0_19("19",Vector) = (0.46066, -0.71634, 0.52406, 0)
+        _unknownColorStr0("Unknown Color Str 0", Float) = 0.50917
+//        _cb0_19("19",Vector) = (0.46066, -0.71634, 0.52406, 0)
+        _unknownUnnormalizedDir1("Unknown Unnormalized Dir 1", Vector) = (0.46066, -0.71634, 0.52406, 0)
         _cb0_20("20",Color) = (0.15648, 0.18993, 0.26669, 0.03339)
         _cb0_21("21",Vector) = (0.00213, 0.627, 24.44967, 0)
         _cb0_23("23",Color) = (1, 0.89974, 0.7816, 0)
@@ -58,7 +65,7 @@ Shader"Test/GenshinCloud"
                 float4 v3 : TEXCOORD2;
                 float4 v4 : TEXCOORD3;
                 float3 v5_baseColor : TEXCOORD4;
-                float3 v6_noiseRColor : TEXCOORD5;
+                float3 v6_cb0_16Color : TEXCOORD5;
                 float3 v7_noiseGColor : TEXCOORD6;
                 float3 v8_unknownColor : TEXCOORD7;
                 float3 v9_unknownColor : TEXCOORD8;
@@ -75,13 +82,20 @@ Shader"Test/GenshinCloud"
             float4 _cb0_8;
             float4 _cb0_9;
             float4 _cb0_10;
-            float4 _cb0_12;
-            float4 _cb0_13;
-            float4 _cb0_15;
+            // float4 _cb0_12;
+            // float4 _cb0_13;
+            float _unknownStr0;
+            float3 _unknownColor0;
+            float _unknownIntensity0;
+            // float4 _cb0_15;
+            float _unknownStr1;
+            float _unknownUnnormalizedDir0;
+            
             float4 _cb0_16;
             float4 _cb0_17;
             float4 _cb0_18;
-            float4 _cb0_19;
+            // float4 _cb0_19;
+            float3 _unknownUnnormalizedDir1;
             float4 _cb0_20;
             float4 _cb0_21;
             float4 _cb0_23;
@@ -100,6 +114,10 @@ Shader"Test/GenshinCloud"
             float linearstep(float x, float min, float max)
             {
                 return (x - min) / (max - min);
+            }
+            float2 linearstep(float2 xy, float min, float max)
+            {
+                return (xy - min.xx) / (max - min);
             }
 
             v2f vert (appdata v)
@@ -143,62 +161,60 @@ Shader"Test/GenshinCloud"
                 r1.z = tl46.y / max(tl46.x, 0) * _cb0_27.w;
                 r1.y = 1 - smoothstep(saturate(linearstep(r1.z, tl46.w, 1)));
                 r1.z = smoothstep(saturate(1 / tl46.z * r1.z));
-                r1.w = 1 / tl46.z;
 
                 o.v4.w = -r1.z * r1.y + 1;
-                float vdu1 = dot(viewDir, _cb0_15.yzw);
-                r0.x = dot(viewDir, _cb0_19.xyz);
-                r0.y = vdu1 * 0.5 + 0.5;
-                o.v4.x = r0.y * _cb0_28.w;
+                float vdu1 = dot(viewDir, _unknownUnnormalizedDir0.xyz);
+                float vdu2 = dot(viewDir, _unknownUnnormalizedDir1.xyz);
+                float packedVdU1 = vdu1 * 0.5 + 0.5;
+                o.v4.x = packedVdU1 * _cb0_28.w;
                 o.v4.yz = v.color.zw;
 
-                r0.z = max(lerp(vdu1, 1, _cb0_26.w), 0);
+                float strengthedNoneNegativeVdU1= max(lerp(vdu1, 1, _cb0_10.w), 0);
                 r1.y = max(lerp(vdu1, 1, _cb0_26.w), 0);
-                r0.z = pow(r0.z, 3);
-                r2.xyz = lerp(_cb0_9.xyz, _cb0_10.xyz, r0.z);
+                float powedNoneNegativeVdU1 = pow(strengthedNoneNegativeVdU1, 3);
+                float3 mixedColor9_10 = lerp(_cb0_9.xyz, _cb0_10.xyz, powedNoneNegativeVdU1);
                 float4 r3;
-                r3.xyz = lerp(_cb0_7.xyz, _cb0_8.xyz, r0.z);
+                float3 mixedColor7_8 = lerp(_cb0_7.xyz, _cb0_8.xyz, powedNoneNegativeVdU1);
                 
-                r0.z = LOAD_TEXTURE2D_X(_Tex0, float2(abs(r0.w)/max(_cb0_12.x, 0.0001), 0.5)).x;
-                r2.xyz = lerp(r2.xyz, r3.xyz, r0.z);
-                r0.z = LOAD_TEXTURE2D_X(_Tex0, float2(abs(r0.w)/max(_cb0_15.x, 0.0001), 0.5)).x;
-                r3.xyz = _cb0_12.yzw * _cb0_13.x;
-                r3.xyz = r3.xyz * r0.z;
-
-                r0.z = abs(_cb0_15.z) - 0.2;
-                r0.z = saturate(r0.z * 3.3333);
-                r0.z = smoothstep(r0.z);
-
-                r0.w = max(r0.y, 0);
-                r1.zw = r0.ww + float2(-0.3, -0.5);
-                r1.z = saturate(r1.z * 1.4286);
-                r3.w = smoothstep(r1.z);
-                r2.xyz = r3.xyz * (r0.z * (1 - r2.w * r1.z) + r3.w) + r2.xyz;
-                r0.w = log(min(r0.w, 1));
+                float colorMix1 = LOAD_TEXTURE2D_X(_Tex0, float2(abs(r0.w)/max(_unknownStr0, 0.0001), 0.5)).x;
+                float3 mixedColor7_8_9_10 = lerp(mixedColor9_10, mixedColor7_8, colorMix1);
+                float colorStrength1 = LOAD_TEXTURE2D_X(_Tex0, float2(abs(r0.w)/max(_unknownStr1, 0.0001), 0.5)).x;
+                float3 unknownColor = _unknownColor0.xyz * _unknownIntensity0.x * colorStrength1;
+                
+                r0.z = smoothstep(saturate((abs(_unknownUnnormalizedDir0.y) - 0.2) * 3.3333));
+                float noneNegativePackedVdU1 = max(packedVdU1, 0);
+                // r1.zw = r0.ww + float2(-0.3, -0.5);
+                // r1.z = r0.w - 0.3;
+                float noneNegativeVdU1 = noneNegativePackedVdU1 - 0.5;
+                // r1.z = saturate((r0.w - 0.3) * 1.4286);
+                r3.w = smoothstep(saturate((noneNegativePackedVdU1 - 0.3) * 1.4286));
+                // r2.w = 3 - 2 * r1.z;
+                // r1.z = r1.z * r1.z;
+                // r3.w = r1.z * r2.w;
+                float3 unknownMixedColor = unknownColor * lerp(1, r0.z, r3.w) + mixedColor7_8_9_10;
+                
+                r0.w = log(min(noneNegativePackedVdU1, 1));
                 r0.z = abs(vdl) * _cb0_17.w;
                 r1.z = r0.w * r0.z;
                 r3.xyz = exp(float3(0.1, 0.1, 0.5) * r0.z * r0.w);
                 r3.xy = min(r3.xy, 1);
-                float4 r4;
-                r4.xyz = saturate(vdl * r3.z) * _cb0_18.w * _cb0_16.xyz;
+                // float4 r4;
+                float3 noiseRColorBase = saturate(vdl * r3.z) * _cb0_18.w * _cb0_16.xyz;
                 r3.xyz = (min(1, exp(r1.z)) + r3.x * 0.12 + r3.y * 0.03) * _cb0_18.w * _cb0_18.xyz;
-                r0.z = smoothstep(saturate(r1.w * 2));
-                o.v5_baseColor.xyz = r3.xyz * r0.z + r2.xyz;
+                r0.z = smoothstep(saturate(noneNegativeVdU1 * 2));
+                o.v5_baseColor.xyz = r3.xyz * r0.z + unknownMixedColor;
 
-                r0.z = saturate(r0.x);
-                r0.x = r0.x * 0.5 + 0.5;
-                r0.xy = r0.xy - _cb0_17.z;
 
-                r0.z = smoothstep(max((pow(r0.z, 5) - 0.5) * 2, 0)) * _cb0_21.x;
-                r1.xzw = _cb0_20.xyz * (1 - 2 * abs(_cb0_21.y - 0.5)) * r0.z * clamp(_cb0_20.w, 0, 0.8) + r4.xyz;
+                float packedVdU2 = vdu2 * 0.5 + 0.5;
 
-                o.v6_noiseRColor.xyz = r1.xzw * smoothstep(saturate(2.5 * (0.7 - _cb0_27.z)));
-                r0.xy = saturate(r0.xy / (1 - _cb0_17.z));
-                r0.x = pow(smoothstep(r0.x) * _cb0_20.w * 0.1, 2);
-                r1.xzw = r0.x * _cb0_20.xyz;
+                r0.z = smoothstep(max((pow(saturate(vdu2), 5) - 0.5) * 2, 0)) * _cb0_21.x;
+                float3 noiseRColor = _cb0_20.xyz * (1 - 2 * abs(_cb0_21.y - 0.5)) * r0.z * clamp(_cb0_20.w, 0, 0.8) + noiseRColorBase;
 
-                r0.x = pow(smoothstep(r0.y) * _cb0_16.w * 0.125, 2);
-                o.v7_noiseGColor.xyz = r0.z * (r0.x * _cb0_18.xyz + r1.xzw);
+                o.v6_cb0_16Color.xyz = noiseRColor * smoothstep(saturate(2.5 * (0.7 - _cb0_27.z)));
+                r0.xy = saturate(linearstep(float2(packedVdU2, packedVdU1), _cb0_17.z, 1));
+                float curve20 = pow(smoothstep(r0.x) * _cb0_20.w * 0.1, 2);
+                float curve18 = pow(smoothstep(r0.y) * _cb0_16.w * 0.125, 2);
+                o.v7_noiseGColor.xyz = r0.z * (curve18 * _cb0_18.xyz + curve20 * _cb0_20.xyz);
                 r0.x = pow(r1.y, 3);
                 o.v8_unknownColor.xyz = lerp(_cb0_23.xyz, _cb0_24.xyz, r0.x);
                 o.v9_unknownColor.xyz = lerp(_cb0_25.xyz, _cb0_26.xyz, r0.x);
@@ -258,7 +274,7 @@ Shader"Test/GenshinCloud"
                 float3 added_color = i.v8_unknownColor.xyz * _cb0_27.z;
 
                 float unknown_str = i.v4.x + 1;
-                color = (color + added_color * 0.4 + i.v6_noiseRColor.xyz * curl.x) * unknown_str - i.v5_baseColor.xyz;
+                color = (color + added_color * 0.4 + i.v6_cb0_16Color.xyz * curl.x) * unknown_str - i.v5_baseColor.xyz;
 
                 float light_str = smoothstep(saturate((_cb0_27.z - 0.4) * 3.3333));
                 float balance = min(smoothstep(saturate(i.v3.w * 10)), 1);
