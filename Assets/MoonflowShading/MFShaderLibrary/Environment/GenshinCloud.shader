@@ -14,35 +14,34 @@ Shader"Test/GenshinCloud"
         _unknownStr0("unknown Str 0", Float) = 0.40979
         _unknownColor0("Unknown Color 0", Color) = (0.34851, 0.74134, 1, 1)
         _unknownIntensity0("Unknown Intensity 0", Float) = 1.24741
-//        _cb0_12("12",Vector) = (0.40979, 0.34851, 0.74134, 1)
-//        _cb0_13("13",Vector) = (1.24741, 0, 0, 0)
-//        _cb0_15("15",Vector) = (0.49728, -0.67019, 0.50162, 0.54701)
         _unknownStr1("Unknown Str 1", Float) = 0.49728
         _unknownUnnormalizedDir0("Unknown Unnormalized Dir 0", Vector) = (-0.67019, 0.50162, 0.54701, 0)
         _cb0_16("16",Color) = (1, 0.99262, 0.86738, 9.92669)
         _cb0_17("17",Vector) = (0, 0, 1, 999.37653)
         _cb0_18("18",Color) = (0.70543, 0.76732, 0.76504, 0.50917)
         _unknownColorStr0("Unknown Color Str 0", Float) = 0.50917
-//        _cb0_19("19",Vector) = (0.46066, -0.71634, 0.52406, 0)
         _unknownUnnormalizedDir1("Unknown Unnormalized Dir 1", Vector) = (0.46066, -0.71634, 0.52406, 0)
         _cb0_20("20",Color) = (0.15648, 0.18993, 0.26669, 0.03339)
         _cb0_21("21",Vector) = (0.00213, 0.627, 24.44967, 0)
-        _cb0_23("23",Color) = (1, 0.89974, 0.7816, 0)
-        _cb0_24("24",Color) = (1, 0.89974, 0.7816, 0)
-        _cb0_25("25",Color) = (0, 0.27366, 0.45641, 0)
-        _cb0_26("26",Color) = (0, 0.40506, 1, 0)
+        _BrightColor0("亮部混合0",Color) = (1, 0.89974, 0.7816, 0)
+        _BrightColor1("亮部混合1",Color) = (1, 0.89974, 0.7816, 0)
+        _DarkColor0("暗部混合0",Color) = (0, 0.27366, 0.45641, 0)
+        _DarkColor1("暗部混合1",Color) = (0, 0.40506, 1, 0)
         _cb0_27("27",Vector) = (0, 0, 0.11, 1)
-        _cb0_28("28",Vector) = (0,0,0,1)
-        _cb_zwTilling("35", Vector) = (0,0,2,4)
-        _cb0_36("36",Vector) = (3, 0.015, 6, 0)
+        _CloudIntensity("整体亮度", Float) = 1
+        _GridNum("贴图行列数量(一行z个,一列w个)", Vector) = (2,4,0,0)
+        _DissolveScale("溶解缩放", Float) = 3
+        _DissolveStr("溶解强度", Range(0, 0.2)) = 0.015
+        _DissolveSpeed("溶解滚动速度", Float) = 6
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags { "RenderType"="Transparent" }
         LOD 100
 
         Pass
         {
+//            Blend SrcAlpha OneMinusSrcAlpha
             Cull Off
             HLSLPROGRAM
             #pragma vertex vert
@@ -64,11 +63,12 @@ Shader"Test/GenshinCloud"
                 float4 uv : TEXCOORD1;
                 float4 v3 : TEXCOORD2;
                 float4 v4 : TEXCOORD3;
-                float3 v5_baseColor : TEXCOORD4;
+                float3 v5_SkyColor : TEXCOORD4;
                 float3 v6_cb0_16Color : TEXCOORD5;
                 float3 v7_noiseGColor : TEXCOORD6;
                 float3 v8_unknownColor : TEXCOORD7;
                 float3 v9_unknownColor : TEXCOORD8;
+                float4 temp: TEXCOORD9;
             };
 
             Texture2D _Tex0;
@@ -82,30 +82,28 @@ Shader"Test/GenshinCloud"
             float4 _cb0_8;
             float4 _cb0_9;
             float4 _cb0_10;
-            // float4 _cb0_12;
-            // float4 _cb0_13;
             float _unknownStr0;
             float3 _unknownColor0;
             float _unknownIntensity0;
-            // float4 _cb0_15;
             float _unknownStr1;
-            float _unknownUnnormalizedDir0;
+            float3 _unknownUnnormalizedDir0;
             
             float4 _cb0_16;
             float4 _cb0_17;
             float4 _cb0_18;
-            // float4 _cb0_19;
             float3 _unknownUnnormalizedDir1;
             float4 _cb0_20;
             float4 _cb0_21;
-            float4 _cb0_23;
-            float4 _cb0_24;
-            float4 _cb0_25;
-            float4 _cb0_26;
+            float4 _BrightColor0;
+            float4 _BrightColor1;
+            float4 _DarkColor0;
+            float4 _DarkColor1;
             float4 _cb0_27;
-            float4 _cb0_28;
-            float4 _cb0_36;
-            float4 _cb_zwTilling;
+            float _CloudIntensity;
+            float4 _GridNum;
+            float _DissolveStr;
+            float _DissolveScale;
+            float _DissolveSpeed;
 
             float smoothstep(float input)
             {
@@ -125,6 +123,8 @@ Shader"Test/GenshinCloud"
                 float4 tl46 = v.tl46;
                 tl46 = float4(233.20918, 26.16353, 0.4, 0.6);
                 v2f o;
+                o.temp = float4(0,0,0,0);
+                
                 float4 r0;
                 float4 r1;
                 o.vertex = TransformObjectToHClip(v.vertex);
@@ -132,23 +132,26 @@ Shader"Test/GenshinCloud"
                 r1.xyz = o.vertex;
                 
                 float4 r2 = 0;
-                float3 worldDir = posWS - _CameraPlanarPos.xyz;
+                float3 worldDir = posWS - /*_WorldSpaceCameraPos*/_CameraPlanarPos.xyz;
                 float4 halfPosCS = o.vertex * 0.5;
                 o.v1_mayCenterScreenPos = float4(halfPosCS.x + halfPosCS.z, halfPosCS.y * _ProjectionParams.x + halfPosCS.z, 0, o.vertex.z);
 
-                //========== 云的序号 =============
-                r0.w = round((_cb_zwTilling.z * _cb_zwTilling.w - 1) * v.color.y + 0.5);
-                r1.x = r0.w * _cb_zwTilling.z;
-                r1.x = (r1.x > 0 ? 1 : -1) * _cb_zwTilling.z;
+                //========== 云的序号 ============
+                r0.w = round((_GridNum.x * _GridNum.y - 1) * v.color.y + 0.5);
+                r1.x = r0.w * _GridNum.x;
+                r1.x = (r1.x > 0 ? 1 : -1) * _GridNum.x;
                 r1.y = 1 / r1.x * r0.w;
-                r2.y = round(r0.w / _cb_zwTilling.z);
+                r2.y = round(r0.w / _GridNum.x);
                 r2.x = frac(r1.y) * r1.x;
                 //r2.xy决定是贴图上的哪朵云
                 float2 SingleCloudUV = r2.xy + v.uv.xy;
-                o.uv.xy = SingleCloudUV / _cb_zwTilling.zw;
-                float2 uvOffset = float2(1.2, _cb0_36.z) * float2(_cb0_36.z, 0.8) * _cb0_21.z;
-                o.uv.zw = v.uv.xy * _cb0_36.x + uvOffset;
+                o.uv.xy = SingleCloudUV / _GridNum.xy;
+                
+                //========== uv扰动计算 ============
+                float2 uvOffset = float2(1.2, _DissolveSpeed) * float2(_DissolveSpeed, 0.8) * _Time.x /** _cb0_21.z*/;
+                o.uv.zw = v.uv.xy * _DissolveScale + uvOffset;
 
+                //========== viewDir + 未知alpha系数 =========
                 float3 viewDir = normalize(worldDir);
                 float vdl = dot(_CloudLightDir.xyz, viewDir);
                 float clampedVdL = clamp(vdl, -1, 1);
@@ -156,6 +159,7 @@ Shader"Test/GenshinCloud"
                 float sqrtVertical = sqrt(1 - abs(clampedVdL));//接近垂直时为1，接近平行为0
                 float lightSide = clampedVdL > 0;
                 r0.w = (unknown_Radian * sqrtVertical - lightSide - PI * 0.5) * PI * 0.2;
+                r0.w = lightSide;//临时加的
                 o.v3 = float4(viewDir, r0.w);
                 
                 r1.z = tl46.y / max(tl46.x, 0) * _cb0_27.w;
@@ -166,11 +170,11 @@ Shader"Test/GenshinCloud"
                 float vdu1 = dot(viewDir, _unknownUnnormalizedDir0.xyz);
                 float vdu2 = dot(viewDir, _unknownUnnormalizedDir1.xyz);
                 float packedVdU1 = vdu1 * 0.5 + 0.5;
-                o.v4.x = packedVdU1 * _cb0_28.w;
+                o.v4.x = packedVdU1 * _CloudIntensity;
                 o.v4.yz = v.color.zw;
-
+                o.temp.xy = float2(vdu1, vdu2);
                 float strengthedNoneNegativeVdU1= max(lerp(vdu1, 1, _cb0_10.w), 0);
-                r1.y = max(lerp(vdu1, 1, _cb0_26.w), 0);
+                r1.y = max(lerp(vdu1, 1, _DarkColor1.w), 0);
                 float powedNoneNegativeVdU1 = pow(strengthedNoneNegativeVdU1, 3);
                 float3 mixedColor9_10 = lerp(_cb0_9.xyz, _cb0_10.xyz, powedNoneNegativeVdU1);
                 float4 r3;
@@ -202,7 +206,7 @@ Shader"Test/GenshinCloud"
                 float3 noiseRColorBase = saturate(vdl * r3.z) * _cb0_18.w * _cb0_16.xyz;
                 r3.xyz = (min(1, exp(r1.z)) + r3.x * 0.12 + r3.y * 0.03) * _cb0_18.w * _cb0_18.xyz;
                 r0.z = smoothstep(saturate(noneNegativeVdU1 * 2));
-                o.v5_baseColor.xyz = r3.xyz * r0.z + unknownMixedColor;
+                o.v5_SkyColor.xyz = r3.xyz * r0.z + unknownMixedColor;
 
 
                 float packedVdU2 = vdu2 * 0.5 + 0.5;
@@ -216,16 +220,18 @@ Shader"Test/GenshinCloud"
                 float curve18 = pow(smoothstep(r0.y) * _cb0_16.w * 0.125, 2);
                 o.v7_noiseGColor.xyz = r0.z * (curve18 * _cb0_18.xyz + curve20 * _cb0_20.xyz);
                 r0.x = pow(r1.y, 3);
-                o.v8_unknownColor.xyz = lerp(_cb0_23.xyz, _cb0_24.xyz, r0.x);
-                o.v9_unknownColor.xyz = lerp(_cb0_25.xyz, _cb0_26.xyz, r0.x);
+                o.v8_unknownColor.xyz = lerp(_BrightColor0.xyz, _BrightColor1.xyz, r0.x);
+                o.v9_unknownColor.xyz = lerp(_DarkColor0.xyz, _DarkColor1.xyz, r0.x);
 
+                
                 return o;
             }
 
             half4 frag (v2f i) : SV_Target
             {
+                return float4(i.temp.xy, 0, 1); 
                 // half4 col = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
-                return float4(i.uv.xy * _cb_zwTilling.zw * 0.125, 0, 1);
+                // return float4(i.uv.xy * _GridNum.xy * 0.125, 0, 1);
                 float4 r0;
                 r0.x = i.v3.w  + 0.1;
                 r0.x = saturate(r0.x * 5);
@@ -235,27 +241,30 @@ Shader"Test/GenshinCloud"
                 // r0.x = r0.x * r0.x;
                 // r0.x = r0.x * r0.y;
 
-                r0.yz = i.v4.yz + i.v4.w;
-                r0.yz = min(r0.yz, 1);
+                r0.yz = min(i.v4.yz + i.v4.ww, 1);
+                // r0.yz = i.v4.yz + i.v4.w;
+                // r0.yz = min(r0.yz, 1);
                 r0.w = max(i.v4.w - i.v4.y, 0);
-                r0.yz = r0.yz - r0.w;
-                r0.yz = 1/r0.yz;
+                r0.yz = 1 / (r0.yz - r0.w);
+                // r0.yz = r0.yz - r0.w;
+                // r0.yz = 1/r0.yz;
                 
                 float4 r1;
-                r1.xyz = SAMPLE_TEXTURE2D(_Tex1, sampler_Tex1, i.uv.zw);
-                float lighting = r1.x;
-                float edgemask = r1.y;
-                float2 le = float2(lighting, edgemask);
-                float thickness = r1.z;
-                le = (le - 0.5) * thickness * _cb0_36.y + i.uv.xy;
-                r1.xyzw = SAMPLE_TEXTURE2D(_Tex0, sampler_Tex0, le);
-                return float4(r1.xyz, 1);
+                r1.xyz = SAMPLE_TEXTURE2D(_Tex0, sampler_Tex1, i.uv.zw);
+                float2 dissolveUV = (r1.xy - 0.5) * r1.z * _DissolveStr;
+                float2 uv = dissolveUV + i.uv.xy;
+                r1.xyzw = SAMPLE_TEXTURE2D(_Tex1, sampler_Tex0, uv);
+                // return float4(r1.xyz, 1);
                 
-                float4 curl = r1.xyzw;
                 
+                float4 cloud = r1.xyzw;
+                float light = cloud.x;
+                float edge = cloud.y;
+                float thickness = cloud.z;
+                float mask = cloud.w;
                 r0.w = max(i.v4.w - i.v4.y, 0);
                 r0.yz = 1 / (min(i.v4.yz + i.v4.w, 1) - r0.w);
-                r0.w = curl.z - r0.w;
+                r0.w = thickness - r0.w;
                 r0.yz = saturate(r0.yz * r0.w);
 
                 float4 r2;
@@ -263,24 +272,23 @@ Shader"Test/GenshinCloud"
                 r2.xy = -2 * r0.yz + 3;
                 r0.yz = r0.yz * r0.yz;
                 r0.y = r0.y * r2.x;
-                float curlG_Str =  ((1 - r2.y * r0.z) * 4 - curl.y) * i.v4.w + curl.y;
+                float cloudG_Str =  ((1 - r2.y * r0.z) * 4 - edge) * i.v4.w + edge;
 
-                float clip_alpha = r0.y * curl.w * r0.x - 0.01;
-                float alpha_output = smoothstep(saturate((i.v3.w + 0.1) * 5)) * r0.y;
 
-                // clip(clip_alpha);
-                float3 color = curlG_Str * i.v7_noiseGColor.xyz +  lerp(i.v8_unknownColor.xyz , i.v9_unknownColor.xyz, curl.x);
+                float alpha_output = smoothstep(saturate((i.v3.w + 0.1) * 5))   /** r0.y*/ * mask;
+                // return float4(alpha_output.xxx, 1);
+                clip(alpha_output - 0.01);
+                float3 color = cloudG_Str * i.v7_noiseGColor.xyz +  lerp(i.v8_unknownColor.xyz , i.v9_unknownColor.xyz, light);
 
                 float3 added_color = i.v8_unknownColor.xyz * _cb0_27.z;
 
                 float unknown_str = i.v4.x + 1;
-                color = (color + added_color * 0.4 + i.v6_cb0_16Color.xyz * curl.x) * unknown_str - i.v5_baseColor.xyz;
+                color = (color + added_color * 0.4 + i.v6_cb0_16Color.xyz * light) * unknown_str - i.v5_SkyColor.xyz;
 
                 float light_str = smoothstep(saturate((_cb0_27.z - 0.4) * 3.3333));
                 float balance = min(smoothstep(saturate(i.v3.w * 10)), 1);
                 light_str = lerp(1, light_str, balance);
-                float3 color_output = color * light_str  + i.v5_baseColor.xyz;
-                // return 1;
+                float3 color_output = color * light_str  + i.v5_SkyColor.xyz;
                 return float4(color_output, alpha_output);
             }
             ENDHLSL

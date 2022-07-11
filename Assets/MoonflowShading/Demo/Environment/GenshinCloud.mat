@@ -14,7 +14,7 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
+  m_CustomRenderQueue: 3000
   stringTagMap: {}
   disabledShaderPasses: []
   m_SavedProperties:
@@ -33,9 +33,24 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _CloudIntensity: 1
+    - _DissolveScale: 2.22
+    - _DissolveSpeed: 0.83
+    - _DissolveStr: 0.0369
+    - _unknownColorStr0: 0.50917
+    - _unknownIntensity0: 1.24741
+    - _unknownStr0: 0.40979
+    - _unknownStr1: 0.49728
     m_Colors:
-    - _cb0_10: {r: 0.04327997, g: 0.29053998, b: 0.6398, a: 0.50569}
+    - _BrightColor0: {r: 1, g: 0.89974, b: 0.78160006, a: 0}
+    - _BrightColor1: {r: 1, g: 0.89974, b: 0.78160006, a: 0}
+    - _CameraPlanarPos: {r: 0, g: 0, b: -46.00281, a: 0}
+    - _CloudLightDir: {r: 0, g: 1, b: 0, a: 0}
+    - _DarkColor0: {r: 0, g: 0.27365997, b: 0.45641, a: 0}
+    - _DarkColor1: {r: 0, g: 0.40505996, b: 1, a: 0}
+    - _GridNum: {r: 2, g: 4, b: 0, a: 0}
+    - _cb0_10: {r: 0.043279953, g: 0.29053995, b: 0.6398, a: 0.54509807}
     - _cb0_12: {r: 0.40979, g: 0.34851, b: 0.74134, a: 1}
     - _cb0_13: {r: 1.24741, g: 0, b: 0, a: 0}
     - _cb0_15: {r: 0.49728, g: -0.67019, b: 0.50162, a: 0.54701}
@@ -52,10 +67,13 @@ Material:
     - _cb0_27: {r: 0, g: 0, b: 0.11, a: 1}
     - _cb0_28: {r: 0, g: 0, b: 0, a: 1}
     - _cb0_3: {r: 0, g: 0, b: -46.00281, a: 0}
-    - _cb0_36: {r: 3, g: 0.015, b: 6, a: 0}
+    - _cb0_36: {r: 11.76, g: 0.015, b: 0.55, a: 0}
     - _cb0_4: {r: 0, g: 1, b: 0, a: 0}
     - _cb0_7: {r: 0.02719, g: 0.057569973, b: 0.18781996, a: 0}
     - _cb0_8: {r: 0.01329, g: 0.04424999, b: 0.18124998, a: 0}
     - _cb0_9: {r: 0.06869997, g: 0.24618995, b: 0.45641, a: 0}
     - _cb_zwTilling: {r: 0, g: 0, b: 2, a: 4}
+    - _unknownColor0: {r: 0.34850997, g: 0.74134, b: 1, a: 1}
+    - _unknownUnnormalizedDir0: {r: -0.67019, g: 0.50162, b: 0.54701, a: 0}
+    - _unknownUnnormalizedDir1: {r: 0.46066, g: -0.71634, b: 0.52406, a: 0}
   m_BuildTextureStacks: []
