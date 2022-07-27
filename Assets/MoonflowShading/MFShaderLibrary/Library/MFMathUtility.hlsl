@@ -40,4 +40,17 @@ float4 linearstep(float4 data, float min, float max)
 {
     return (data.xyzw - min.xxxx) / (max.xxxx - min.xxxx);
 }
+
+float ScreenSpaceDither(float2 screenPos, float transparency)
+{
+    float4x4 thresholdMatrix =
+   {
+        1.0 / 17.0,  9.0 / 17.0,  3.0 / 17.0, 11.0 / 17.0,
+        13.0 / 17.0,  5.0 / 17.0, 15.0 / 17.0,  7.0 / 17.0,
+        4.0 / 17.0, 12.0 / 17.0,  2.0 / 17.0, 10.0 / 17.0,
+        16.0 / 17.0,  8.0 / 17.0, 14.0 / 17.0,  6.0 / 17.0
+    };
+    float2 index = fmod(screenPos.xy, 4);
+    clip(transparency - thresholdMatrix[index.x][index.y]);
+}
 #endif
