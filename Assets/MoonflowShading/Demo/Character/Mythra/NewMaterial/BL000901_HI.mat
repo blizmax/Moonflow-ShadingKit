@@ -121,7 +121,7 @@ Material:
     - _HighLightFalloff: 7.2
     - _HighlightFalloff: 2
     - _LightIndirectAtten: 0.5
-    - _LitEdgeBandWidth: 0.248
+    - _LitEdgeBandWidth: 0.143
     - _LitIndirectAtten: 1
     - _MFCel: 2
     - _MFCel_HLight: 3

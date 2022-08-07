@@ -80,7 +80,7 @@ Shader"Moonflow/CelBase"
         [MFModuleElement(_Hair)]
         [HDR]_SpecColor2("Layer2 Color", Color) = (1,1,1,1)
         
-        [MFSplitVectorDrawer(_Hair, SpecMaskOffset#1#0_1 Shift#1 Layer1Offset#1#0.0001_1 Layer2Offset#1#0.0001_1)]
+        [MFSplitVectorDrawer(_Hair, SpecMaskOffset#1#0_1 Shift#1 LayerOffset#2#0.0001_1)]
         _HairData("HairData", Vector) = (1,1,1,1)
         
     }

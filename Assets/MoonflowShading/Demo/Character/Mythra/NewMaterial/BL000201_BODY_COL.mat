@@ -11,7 +11,7 @@ Material:
   m_Shader: {fileID: 4800000, guid: 3d9ad3dcc3604f7db3ea70e32ba7ebb1, type: 3}
   m_ValidKeywords:
   - _ALPHATEST_ON
-  - _MFCEL_HLIGHT_DOUBLESIDEDEPTH
+  - _MFCEL_HLIGHT_FRESNEL
   m_InvalidKeywords:
   - TINTED_OUTLINE
   - _MFCEL_BASE
@@ -108,7 +108,7 @@ Material:
     - _BandWidth: 0.1
     - _BumpScale: 1
     - _Cutoff: 0.1
-    - _DepthThreshold: 0.0459
+    - _DepthThreshold: 0.093
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _EnvironmentEffect: 1
@@ -122,13 +122,13 @@ Material:
     - _Glossiness: 0
     - _GlossyReflections: 1
     - _Hair: 0
-    - _HighLightFalloff: 77.7
+    - _HighLightFalloff: 100
     - _HighlightFalloff: 10
     - _LightIndirectAtten: 1
     - _LitEdgeBandWidth: 0.364
     - _LitIndirectAtten: 0.152
     - _MFCel: 0
-    - _MFCel_HLight: 3
+    - _MFCel_HLight: 1
     - _MFCel_RampTex: 0
     - _MFOutlineModelStrength: 0
     - _MaskTex_Scale: 0
@@ -142,7 +142,7 @@ Material:
     - _PerspectiveDistance: 10
     - _RightSide: 0
     - _RimFalloff: 3.08
-    - _SampleOffset: 0.271
+    - _SampleOffset: 0.238
     - _SelfShadowStr: 0
     - _Shadow: 0.2
     - _ShadowStr: 1
@@ -166,7 +166,7 @@ Material:
     - _HairData: {r: 1, g: 1, b: 1, a: 1}
     - _HighLightColor: {r: 1.2869291, g: 1.0269836, b: 0.7830842, a: 1}
     - _RimColor: {r: 3.9533494, g: 1.4902679, b: 1.0763046, a: 1}
-    - _ShadowColor: {r: 0.9622642, g: 0.7126202, b: 0.8643996, a: 0.5}
+    - _ShadowColor: {r: 1, g: 0.7971698, b: 0.966195, a: 1}
     - _SpecColor1: {r: 1, g: 1, b: 1, a: 1}
     - _SpecColor2: {r: 1, g: 1, b: 1, a: 1}
     - _StockingColor: {r: 0.01886791, g: 0.0029369863, b: 0.012959341, a: 1}

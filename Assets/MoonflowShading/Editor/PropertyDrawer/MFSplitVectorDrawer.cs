@@ -127,7 +127,11 @@ namespace MoonflowShading.Editor
                                 return;
                             }
                             Vector2 tempData = new Vector2(data[offset], data[offset + 1]);
+                            EditorGUIUtility.wideMode = true;
+                            float olw = EditorGUIUtility.labelWidth;
+                            EditorGUIUtility.labelWidth = EditorGUIUtility.currentViewWidth * 0.3f;
                             tempData = EditorGUILayout.Vector2Field(_splitName[i].Item1, tempData);
+                            EditorGUIUtility.labelWidth = olw;
                             if (_splitName[i].Item3.enable)
                             {
                                 data[offset] = Mathf.Clamp(tempData.x, _splitName[i].Item3.min, _splitName[i].Item3.max);
@@ -149,7 +153,11 @@ namespace MoonflowShading.Editor
                                 return;
                             }
                             Vector3 tempData = new Vector3(data[offset], data[offset + 1], data[offset + 2]);
+                            EditorGUIUtility.wideMode = true;
+                            float olw = EditorGUIUtility.labelWidth;
+                            EditorGUIUtility.labelWidth = EditorGUIUtility.currentViewWidth * 0.3f;
                             tempData = EditorGUILayout.Vector3Field(_splitName[i].Item1, tempData);
+                            EditorGUIUtility.labelWidth = olw;
                             if (_splitName[i].Item3.enable)
                             {
                                 data[offset] = Mathf.Clamp(tempData.x, _splitName[i].Item3.min, _splitName[i].Item3.max);
