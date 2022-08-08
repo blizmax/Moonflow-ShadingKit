@@ -12,8 +12,8 @@
 * MFModuleDefinition(keyword, createMode(Bool)) 
   * __[MFModuleDefinition(\_MFTEX\_ON, True)]\_Exp("Exp", Float) = 0__
   * 需要挂在Float参数上
-  * createMode为True时，开关控制第一输入项对应的keyword的开关
-  * createMode为False时，仅作常规0/1判断的Branch开关
+  * createMode为True时，开关控制第一输入项对应的keyword的开关(作为生成Keyword的选项)
+  * createMode为False时，仅作常规0/1判断的Branch开关(作为Keyword分支控制项，只做面板识别作用，不会传递到Shader内)
 * MFModuleElement(name)
   * __[MFModuleElement(\_Exp)]\_Exp1("Exp1", Float) = 0__
   * 需要挂载Float参数上
