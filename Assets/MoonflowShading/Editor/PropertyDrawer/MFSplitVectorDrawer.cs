@@ -17,8 +17,6 @@ namespace MoonflowShading.Editor
         private string[] _propertyName;
         private Material _mat;
         private MaterialProperty _st;
-        private float[] data;
-        // private Vector4 propVectorValue;
         private bool _hasInit = false;
 
         public MFSplitVectorDrawer(string keyword, string splitName)
@@ -30,13 +28,7 @@ namespace MoonflowShading.Editor
         {
             SplitName(splitName);
         }
-
-        private void InitData(MaterialProperty prop)
-        {
-            // propVectorValue = prop.vectorValue;
-            data = new float[4]{prop.vectorValue.x, prop.vectorValue.y, prop.vectorValue.z, prop.vectorValue.w};
-            _hasInit = true;
-        }
+        
         public void SplitName(string splitName)
         {
             string[] split = splitName.Split(" ");
@@ -84,13 +76,11 @@ namespace MoonflowShading.Editor
             }
             if (!needDraw) return;
             EditorGUI.BeginChangeCheck();
-            // propVectorValue = prop.vectorValue;
-            if (!_hasInit) InitData(prop);
             
             int offset = 0;
 
             float oldwidth = EditorGUIUtility.labelWidth;
-            
+            float[] data = { prop.vectorValue.x, prop.vectorValue.y, prop.vectorValue.z, prop.vectorValue.w };
             for (int i = 0; i < _splitName.Length; i++)
             {
                 using (new EditorGUILayout.HorizontalScope())
@@ -181,7 +171,6 @@ namespace MoonflowShading.Editor
                         }
                     }
                 }
-                
             }
             if(EditorGUI.EndChangeCheck())
                 prop.vectorValue = new Vector4(data[0], data[1], data[2], data[3]);
