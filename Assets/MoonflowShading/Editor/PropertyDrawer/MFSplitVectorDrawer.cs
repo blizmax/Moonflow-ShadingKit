@@ -14,14 +14,14 @@ namespace MoonflowShading.Editor
             public float max;
         }
         private ValueTuple<string, int, RangeTuple>[] _splitName; 
-        private string[] _propertyName;
+        private string[] _keywordProperties;
         private Material _mat;
         private MaterialProperty _st;
         private bool _hasInit = false;
 
         public MFSplitVectorDrawer(string keyword, string splitName)
         {
-            _propertyName = keyword.Split(" ");
+            _keywordProperties = keyword.Split(" ");
             SplitName(splitName);
         }
         public MFSplitVectorDrawer(string splitName)
@@ -70,7 +70,7 @@ namespace MoonflowShading.Editor
             _mat = editor.target as Material;
             if (_mat == null) return;
             bool needDraw = false;
-            foreach (var t in _propertyName)
+            foreach (var t in _keywordProperties)
             {
                 if (_mat.GetFloat(t) == 1f) needDraw = true;
             }
@@ -81,12 +81,31 @@ namespace MoonflowShading.Editor
 
             float oldwidth = EditorGUIUtility.labelWidth;
             float[] data = { prop.vectorValue.x, prop.vectorValue.y, prop.vectorValue.z, prop.vectorValue.w };
+
+            string[] shownName = prop.displayName.Split(" ");
+            bool nameSync = shownName.Length == _splitName.Length;
             for (int i = 0; i < _splitName.Length; i++)
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     switch (_splitName[i].Item2)
                     {
+                        case 0:
+                        {
+                            if (offset > 1)
+                            {
+                                MFDebug.LogError("shader面板Vector分离数据超限");
+                                return;
+                            }
+                            
+                            Color tempData = new Color(data[offset], data[offset + 1], data[offset + 2]);
+                            tempData = EditorGUILayout.ColorField(nameSync ? shownName[i] : _splitName[i].Item1, tempData);
+                            data[offset] = tempData.r;
+                            data[offset + 1] = tempData.g;
+                            data[offset + 2] = tempData.b;
+                            offset += 3;
+                            break;
+                        }
                         case 1:
                         {
                             if (offset > 3)
@@ -98,13 +117,13 @@ namespace MoonflowShading.Editor
                             if (_splitName[i].Item3.enable)
                             {
                                 EditorGUIUtility.labelWidth = 100;
-                                EditorGUILayout.LabelField(_splitName[i].Item1);
+                                EditorGUILayout.LabelField(nameSync ? shownName[i] : _splitName[i].Item1);
                                 data[offset] = EditorGUILayout.Slider( data[offset], _splitName[i].Item3.min, _splitName[i].Item3.max);
                                 EditorGUIUtility.labelWidth = oldwidth;
                             }
                             else
                             {
-                                data[offset] = EditorGUILayout.FloatField(_splitName[i].Item1, data[offset]);
+                                data[offset] = EditorGUILayout.FloatField(nameSync ? shownName[i] : _splitName[i].Item1, data[offset]);
                             }
                             offset += 1;
                             break;
@@ -120,7 +139,7 @@ namespace MoonflowShading.Editor
                             EditorGUIUtility.wideMode = true;
                             float olw = EditorGUIUtility.labelWidth;
                             EditorGUIUtility.labelWidth = EditorGUIUtility.currentViewWidth * 0.3f;
-                            tempData = EditorGUILayout.Vector2Field(_splitName[i].Item1, tempData);
+                            tempData = EditorGUILayout.Vector2Field(nameSync ? shownName[i] : _splitName[i].Item1, tempData);
                             EditorGUIUtility.labelWidth = olw;
                             if (_splitName[i].Item3.enable)
                             {
@@ -146,7 +165,7 @@ namespace MoonflowShading.Editor
                             EditorGUIUtility.wideMode = true;
                             float olw = EditorGUIUtility.labelWidth;
                             EditorGUIUtility.labelWidth = EditorGUIUtility.currentViewWidth * 0.3f;
-                            tempData = EditorGUILayout.Vector3Field(_splitName[i].Item1, tempData);
+                            tempData = EditorGUILayout.Vector3Field(nameSync ? shownName[i] : _splitName[i].Item1, tempData);
                             EditorGUIUtility.labelWidth = olw;
                             if (_splitName[i].Item3.enable)
                             {

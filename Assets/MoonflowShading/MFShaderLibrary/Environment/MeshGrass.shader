@@ -9,16 +9,16 @@ Shader"Moonflow/MeshGrass"
         [MFEnumKeyword(Realistic Toon)]_MFGrassType("草渲染模式", Float) = 0
         [MFModuleDefinition(_MFGRASSTYPE_REALISTIC, false)]_Realistic("Realistic", Float) = 0
         [MFModuleDefinition(_MFGRASSTYPE_TOON, false)]_Toon("Toon", Float) = 0
+        [MFSplitVector(_Toon, NoiseColor#0 NoiseColorScale#1)]_ToonGrassNoiseColor("卡渲偏色 卡渲偏色缩放", Vector) = (0.42, 0.6, 0.05, 1)
         
-        [MFModuleElement(_Toon)]_NoiseColor("卡渲偏色", Color) = (0.42, 0.6, 0.05, 1)
-        [MFSplitVector(_Toon, ShadowStr#1#0_1 ShadowScale#1 ShadowSpeed#2)]_GrassCloudShadowParam_Preview("云影参数(预览)", Vector) = (1, 1, 0, 0)
+        [MFSplitVector(_Toon, ShadowStr#1#0_1 ShadowScale#1 ShadowSpeed#2)]_GrassCloudShadowParam_Preview("云影强度 云影缩放 云影滚动速度", Vector) = (1, 1, 0, 0)
         
         [MFModuleDefinition(_MFGRASS_QUAD_ON, True)]_MFGrass_Quad("面片模式", Float) = 0
         [MFModuleElement(_MFGrass_Quad)]_MainTex ("Texture", 2D) = "white" {}
         [MFModuleElement(_MFGrass_Quad)]_CutOff("Cut Off", Float) = 0.35
         
         [MFModuleDefinition(_MFGRASS_PROCEDURALMESH_ON, True)]_MFGrass_ProceduralMesh("程序化模型", Float) = 0
-        [MFSplitVector(_MFGrass_ProceduralMesh, Height#1#0_5 Width#1#0_5 Tilt#1#0_1 Bend#1#0_1)]_MFGrass_Procedural_Param_Preview("程序化参数", Vector) = (1,1,0.5,0.5)
+        [MFSplitVector(_MFGrass_ProceduralMesh, Height#1#0_5 Width#1#0_5 Tilt#1#0_1 Bend#1#0_1)]_MFGrass_Procedural_Param_Preview("草高 草宽 草斜度 草曲度", Vector) = (1,1,0.5,0.5)
         
         [MFModuleDefinition(_MFGRASS_MANUAL_ON, True)]_MFGrass_Manual("手动模式", Float) = 0
         [MFEnumKeyword(_MFGRASS_MANUAL_ON, Type1 Type2)]_GrassType("草类型", Float) = 0
@@ -119,7 +119,12 @@ Shader"Moonflow/MeshGrass"
                 /**********  基础颜色  **********/
                 col.rgb *= lerp(_MidBottomColor, _TopColor, i.uv.y);
 
+                /**********   卡渲偏色   ***********/
+            #ifdef _MFGRASSTYPE_TOON
+                float mixing = Noise_Gradient2D(i.worldPos.xz , _GrassCloudShadowParam_Preview.y);
                 
+            #endif
+
                 /**********   云影   ***********/
                 half cloudShadow = 1;
             #ifdef _MFGRASS_PREVIEW_ON
