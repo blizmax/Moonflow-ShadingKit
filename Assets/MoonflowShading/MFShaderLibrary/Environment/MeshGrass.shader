@@ -18,7 +18,7 @@ Shader"Moonflow/MeshGrass"
         [MFModuleElement(_MFGrass_Quad)]_CutOff("Cut Off", Float) = 0.35
         
         [MFModuleDefinition(_MFGRASS_PROCEDURALMESH_ON, True)]_MFGrass_ProceduralMesh("程序化模型", Float) = 0
-        [MFSplitVector(_MFGrass_ProceduralMesh, Height#1#0_5 Width#1#0_5 Tilt#1#0_1 Bend#1#0_1)]_MFGrass_Procedural_Param_Preview("草高 草宽 草斜度 草曲度", Vector) = (1,1,0.5,0.5)
+        [MFSplitVector(_MFGrass_ProceduralMesh, Height#1#0_5 Width#1#0_5 Tilt#1#0_1 Bend#1#0_0.99)]_MFGrass_Procedural_Param_Preview("草高 草宽 草斜度 草曲度", Vector) = (1,1,0.5,0.5)
         
         [MFModuleDefinition(_MFGRASS_MANUAL_ON, True)]_MFGrass_Manual("手动模式", Float) = 0
         [MFEnumKeyword(_MFGRASS_MANUAL_ON, Type1 Type2)]_GrassType("草类型", Float) = 0
@@ -100,10 +100,19 @@ Shader"Moonflow/MeshGrass"
             v2f vert (appdata v)
             {
                 v2f o;
-                o.vertex = TransformObjectToHClip(v.vertex);
-                o.uv = v.uv;
                 VertexPositionInputs vpi = GetVertexPositionInputs(v.vertex);
+            #ifdef _MFGRASS_PROCEDURALMESH_ON
+                float3 hashWorldPos = vpi.positionWS;
+                float3 offsetDir = float3(1,0,0);
+                v.vertex.xz *= _MFGrass_Procedural_Param_Preview.y;
+                v.vertex.y *= _MFGrass_Procedural_Param_Preview.x;
+                vpi = GetVertexPositionInputs(v.vertex);
+                vpi.positionWS.xz += offsetDir * pow(v.vertex.y * _MFGrass_Procedural_Param_Preview.z, 1/(1 - _MFGrass_Procedural_Param_Preview.w));
+                v.vertex.xyz = TransformWorldToObject(vpi.positionWS);
+            #endif
+                o.vertex = TransformObjectToHClip(v.vertex);
                 o.worldPos = vpi.positionWS;
+                o.uv = v.uv;
                 return o;
             }
 
