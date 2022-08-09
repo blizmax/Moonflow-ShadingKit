@@ -11,12 +11,14 @@ Shader"Moonflow/MeshGrass"
         [MFModuleDefinition(_MFGRASSTYPE_TOON, false)]_Toon("Toon", Float) = 0
         
         [MFModuleElement(_Toon)]_NoiseColor("卡渲偏色", Color) = (0.42, 0.6, 0.05, 1)
-        [MFModuleElement(_Toon)]_GrassCloudShadowTex_Preview("云影贴图(预览)", 2D) = "black"{}
         [MFSplitVector(_Toon, ShadowStr#1#0_1 ShadowScale#1 ShadowSpeed#2)]_GrassCloudShadowParam_Preview("云影参数(预览)", Vector) = (1, 1, 0, 0)
         
         [MFModuleDefinition(_MFGRASS_QUAD_ON, True)]_MFGrass_Quad("面片模式", Float) = 0
         [MFModuleElement(_MFGrass_Quad)]_MainTex ("Texture", 2D) = "white" {}
         [MFModuleElement(_MFGrass_Quad)]_CutOff("Cut Off", Float) = 0.35
+        
+        [MFModuleDefinition(_MFGRASS_PROCEDURALMESH_ON, True)]_MFGrass_ProceduralMesh("程序化模型", Float) = 0
+        [MFSplitVector(_MFGrass_ProceduralMesh, Height#1#0_5 Width#1#0_5 Tilt#1#0_1 Bend#1#0_1)]_MFGrass_Procedural_Param_Preview("程序化参数", Vector) = (1,1,0.5,0.5)
         
         [MFModuleDefinition(_MFGRASS_MANUAL_ON, True)]_MFGrass_Manual("手动模式", Float) = 0
         [MFEnumKeyword(_MFGRASS_MANUAL_ON, Type1 Type2)]_GrassType("草类型", Float) = 0
@@ -41,10 +43,12 @@ Shader"Moonflow/MeshGrass"
             #pragma vertex vert
             #pragma fragment frag
             #pragma shader_feature _ _MFGRASS_PREVIEW_ON
+            #pragma shader_feature _ _MFGRASS_PROCEDURALMESH_ON
             #pragma shader_feature _ _MFGRASS_QUAD_ON
             #pragma shader_feature _ _MFGRASS_MANUAL_ON
             #pragma shader_feature _MFGRASSTYPE_REALISTIC _MFGRASSTYPE_TOON
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/core.hlsl"
+            #include "../Library/MFNoise.hlsl"
 
             struct appdata
             {
@@ -91,6 +95,7 @@ Shader"Moonflow/MeshGrass"
             Texture2D _GrassCloudShadowTex_Preview;
             SamplerState sampler_GrassCloudShadowTex_Preview;
             float4 _GrassCloudShadowParam_Preview;
+            float4 _MFGrass_Procedural_Param_Preview;
 
             v2f vert (appdata v)
             {
@@ -118,13 +123,13 @@ Shader"Moonflow/MeshGrass"
                 /**********   云影   ***********/
                 half cloudShadow = 1;
             #ifdef _MFGRASS_PREVIEW_ON
-                cloudShadow = SAMPLE_TEXTURE2D(_GrassCloudShadowTex_Preview, sampler_GrassCloudShadowTex_Preview, i.worldPos.xz * _GrassCloudShadowParam_Preview.y + _GrassCloudShadowParam_Preview.zw * _Time.x).r * (1-_GrassCloudShadowParam_Preview.x);
+                cloudShadow = Noise_Gradient2D(i.worldPos.xz + _GrassCloudShadowParam_Preview.zw * frac(  _GrassCloudShadowParam_Preview.y * _Time.x), _GrassCloudShadowParam_Preview.y) * 2;
             #else
                 
             #endif
-                col.rgb *= cloudShadow;
-
-                
+                col.rgb = lerp(col.rgb, col.rgb * (1 - _GrassCloudShadowParam_Preview.x), cloudShadow);
+                // col.rgb = col.rgb * (1 - _GrassCloudShadowParam_Preview.x);
+                // return Noise_Gradient2D(i.worldPos.xz, _GrassCloudShadowParam_Preview.y);
                 return col;
             }
             ENDHLSL
