@@ -1,16 +1,8 @@
 #ifndef MF_UTILITY_INCLUDED
 #define MF_UTILITY_INCLUDED
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-
+#include "MFHash.hlsl"
 #define StochasticTex(tex, texSampler, uvData) InigoRepetition1(tex, texSampler, uvData)
-
-half4 hash4( half2 p )
-{
-    return frac(sin(half4( 1.0+dot(p,half2(37.0,17.0)), 
-          2.0+dot(p,half2(11.0,47.0)),
-          3.0+dot(p,half2(41.0,29.0)),
-          4.0+dot(p,half2(23.0,31.0))))*103.0);
-}
 
 //4 times
 //https://iquilezles.org/articles/texturerepetition/
@@ -98,10 +90,7 @@ float4 InigoRepetition3O(TEXTURE2D_PARAM(tex, texSampler), float2 uv, TEXTURE2D_
     return lerp(cola, colb, Smootherstep(0.2, 0.8, f - 0.1 * (sub.r + sub.g + sub.b)));
 }
 
-float2 hash2D2D (float2 s)
-{
-    return frac(sin(fmod(float2(dot(s, float2(127.1,311.7)), dot(s, float2(269.5,183.3))), 3.14159))*43758.5453);
-}
+
 //3 times
 //https://pastebin.com/Av1ZPQmC
 float4 PastebinRepetition(TEXTURE2D_PARAM(tex, texSampler), float2 uv)
@@ -128,18 +117,12 @@ float4 PastebinRepetition(TEXTURE2D_PARAM(tex, texSampler), float2 uv)
     float2 dy = ddy(uv);
  
     //blend samples with calculated weights
-    return mul(SAMPLE_TEXTURE2D_GRAD(tex, texSampler, uv + hash2D2D(BW_vx[0].xy), dx, dy), BW_vx[3].x) + 
-            mul(SAMPLE_TEXTURE2D_GRAD(tex, texSampler, uv + hash2D2D(BW_vx[1].xy), dx, dy), BW_vx[3].y) + 
-            mul(SAMPLE_TEXTURE2D_GRAD(tex, texSampler, uv + hash2D2D(BW_vx[2].xy), dx, dy), BW_vx[3].z);
+    return mul(SAMPLE_TEXTURE2D_GRAD(tex, texSampler, uv + hash2D(BW_vx[0].xy), dx, dy), BW_vx[3].x) + 
+            mul(SAMPLE_TEXTURE2D_GRAD(tex, texSampler, uv + hash2D(BW_vx[1].xy), dx, dy), BW_vx[3].y) + 
+            mul(SAMPLE_TEXTURE2D_GRAD(tex, texSampler, uv + hash2D(BW_vx[2].xy), dx, dy), BW_vx[3].z);
 }
 
-//https://drive.google.com/file/d/1QecekuuyWgw68HU9tg6ENfrCTCVIjm6l/view
-//https://github.com/UnityLabs/procedural-stochastic-texturing/blob/master/Editor/ProceduralTexture2D/SampleProceduralTexture2DNode.cs
-//0->uv 1
-float2 TDEHHash(float2 p)
-{
-    return frac(sin(mul(p, float2x2(127.1, 311.7, 269.5, 183.3))) * 43758.5453);
-}
+
 void TriangleGrid(float2 uv, out float w1, out float w2, out float w3, out float2 vertex1, out float2 vertex2, out float2 vertex3)
 {
     uv *= 3.464;//2*sqrt(3)
@@ -173,9 +156,9 @@ float4 ProcedualTAB(TEXTURE2D_PARAM(tex, texSampler), float2 uv)
     float2 vertex1, vertex2, vertex3;
     TriangleGrid(uv, w1, w2, w3, vertex1, vertex2, vertex3);
 
-    float2 uv1 = uv + TDEHHash(vertex1);
-    float2 uv2 = uv + TDEHHash(vertex2);
-    float2 uv3 = uv + TDEHHash(vertex3);
+    float2 uv1 = uv + TDEHHash2D(vertex1);
+    float2 uv2 = uv + TDEHHash2D(vertex2);
+    float2 uv3 = uv + TDEHHash2D(vertex3);
 
     float2 dx = ddx(uv);
     float2 dy = ddy(uv);
@@ -195,9 +178,9 @@ float4 UnityProcedualTAB(TEXTURE2D_PARAM(tex, texSampler), float2 uv, float blen
     float2 vertex1, vertex2, vertex3;
     TriangleGrid(uv, w1, w2, w3, vertex1, vertex2, vertex3);
 
-    float2 uv1 = uv + TDEHHash(vertex1);
-    float2 uv2 = uv + TDEHHash(vertex2);
-    float2 uv3 = uv + TDEHHash(vertex3);
+    float2 uv1 = uv + TDEHHash2D(vertex1);
+    float2 uv2 = uv + TDEHHash2D(vertex2);
+    float2 uv3 = uv + TDEHHash2D(vertex3);
 
     float2 dx = ddx(uv);
     float2 dy = ddy(uv);
