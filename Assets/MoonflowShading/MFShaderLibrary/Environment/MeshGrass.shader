@@ -9,7 +9,8 @@ Shader"Moonflow/MeshGrass"
         [MFEnumKeyword(Realistic Toon)]_MFGrassType("草渲染模式", Float) = 0
         [MFModuleDefinition(_MFGRASSTYPE_REALISTIC, false)]_Realistic("Realistic", Float) = 0
         [MFModuleDefinition(_MFGRASSTYPE_TOON, false)]_Toon("Toon", Float) = 0
-        [MFSplitVector(_Toon, NoiseColor#0 NoiseColorScale#1)]_ToonGrassNoiseColor("卡渲偏色 卡渲偏色缩放", Vector) = (0.42, 0.6, 0.05, 1)
+        [MFModuleElement(_Toon)]_ToonGrassNoiseColor("卡渲偏色", Color) = (0.42, 0.6, 0.05, 1)
+        [MFModuleElement(_Toon)]_ToonGrassNoiseScale("卡渲偏色缩放", Range(0.01, 10)) = 1
         
         [MFSplitVector(_Toon, ShadowStr#1#0_1 ShadowScale#1 ShadowSpeed#2)]_GrassCloudShadowParam_Preview("云影强度 云影缩放 云影滚动速度", Vector) = (1, 1, 0, 0)
         
@@ -83,14 +84,16 @@ Shader"Moonflow/MeshGrass"
 
             Texture2D _MainTex;
             SamplerState sampler_MainTex;
-
+            
             CBUFFER_START(UnityPerMaterial)
             half _CutOff;
             float4 _MainTex_ST;
             float3 _TopColor;
             float3 _MidBottomColor;
+            float4 _ToonGrassNoiseColor;
+            float _ToonGrassNoiseScale;
             CBUFFER_END
-
+            
             /*Preview*/
             Texture2D _GrassCloudShadowTex_Preview;
             SamplerState sampler_GrassCloudShadowTex_Preview;
@@ -125,14 +128,16 @@ Shader"Moonflow/MeshGrass"
                 clip(col.a-_CutOff);
             #endif
 
-                /**********  基础颜色  **********/
-                col.rgb *= lerp(_MidBottomColor, _TopColor, i.uv.y);
-
+                float3 topColor = _TopColor;
                 /**********   卡渲偏色   ***********/
             #ifdef _MFGRASSTYPE_TOON
-                float mixing = Noise_Gradient2D(i.worldPos.xz , _GrassCloudShadowParam_Preview.y);
-                
+                float mixing = Noise_Gradient2D(i.worldPos.xz , _ToonGrassNoiseScale) * _ToonGrassNoiseColor.a;
+                topColor = lerp(_TopColor.rgb, _ToonGrassNoiseColor.rgb, mixing);
             #endif
+                
+                /**********  基础颜色  **********/
+                col.rgb *= lerp(_MidBottomColor, topColor, i.uv.y);
+
 
                 /**********   云影   ***********/
                 half cloudShadow = 1;

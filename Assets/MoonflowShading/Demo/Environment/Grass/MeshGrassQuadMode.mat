@@ -13,7 +13,6 @@ Material:
   - _MFGRASSTYPE_TOON
   - _MFGRASS_MANUAL_ON
   - _MFGRASS_PREVIEW_ON
-  - _MFGRASS_PROCEDURALMESH_ON
   - _MFGRASS_QUAD_ON
   m_InvalidKeywords:
   - _GRASSTYPE_TYPE2
@@ -110,7 +109,7 @@ Material:
     - _MFGrassType: 1
     - _MFGrass_Manual: 1
     - _MFGrass_Preview: 1
-    - _MFGrass_ProceduralMesh: 1
+    - _MFGrass_ProceduralMesh: 0
     - _MFGrass_Quad: 1
     - _Metallic: 0
     - _OcclusionStrength: 1
@@ -135,6 +134,7 @@ Material:
     - _MidBottomColor: {r: 0, g: 0.5, b: 0.28999996, a: 1}
     - _NoiseColor: {r: 0.41999996, g: 0.6, b: 0.049999982, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
+    - _ToonGrassNoiseColor: {r: 0.42, g: 0.6, b: 0.05, a: 1}
     - _TopColor: {r: 0.33999997, g: 0.6, b: 0, a: 1}
   m_BuildTextureStacks: []
 --- !u!114 &8747689385220156945
